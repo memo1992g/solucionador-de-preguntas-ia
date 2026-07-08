@@ -297,7 +297,7 @@ export default function Page() {
       : isFloatingMinimized
         ? "fixed z-30 h-auto overflow-hidden rounded-[1.5rem] border border-white/12 bg-[linear-gradient(180deg,rgba(18,18,28,0.96),rgba(6,6,10,0.96))] shadow-[0_24px_90px_rgba(0,0,0,0.65)] backdrop-blur-2xl transition-all duration-300 w-[min(92vw,26rem)]"
         : "fixed z-30 max-h-[calc(100vh-1.5rem)] overflow-hidden rounded-[2rem] border border-white/12 bg-[linear-gradient(180deg,rgba(18,18,28,0.96),rgba(6,6,10,0.96))] shadow-[0_30px_120px_rgba(0,0,0,0.65)] backdrop-blur-2xl transition-all duration-300 w-[min(92vw,34rem)]"
-    : "sticky top-4 overflow-hidden rounded-[1.7rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.09),rgba(255,255,255,0.04))] p-4 shadow-[0_24px_90px_rgba(0,0,0,0.35)] backdrop-blur-xl transition-all duration-300 md:p-5";
+    : "sticky top-4 min-h-[calc(100vh-2rem)] overflow-hidden rounded-[1.7rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.09),rgba(255,255,255,0.04))] p-4 shadow-[0_24px_90px_rgba(0,0,0,0.35)] backdrop-blur-xl transition-all duration-300 md:p-5";
 
   const teleprompterBodyClass = isFloating ? (isFloatingExpanded ? "h-full p-4 md:p-5" : "p-4 md:p-5") : "";
   const showTeleprompterContent = !isFloatingMinimized;
@@ -432,8 +432,8 @@ export default function Page() {
           </div>
         </header>
 
-        <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5 shadow-[0_18px_90px_rgba(0,0,0,0.35)] backdrop-blur-xl md:p-6">
+        <section className="grid items-start gap-6 lg:grid-cols-[0.72fr_1.28fr] xl:grid-cols-[0.68fr_1.32fr]">
+          <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5 shadow-[0_18px_90px_rgba(0,0,0,0.35)] backdrop-blur-xl md:p-6 lg:sticky lg:top-4">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[10px] uppercase tracking-[0.45em] text-white/35">Conversacion por voz</p>
@@ -518,12 +518,12 @@ export default function Page() {
                 onPointerUp={handleDragEnd}
                 onPointerCancel={handleDragEnd}
               >
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.35em] text-white/35">Teleprompter en vivo</div>
-                  <div className="mt-1 text-sm text-white/70">Dos paneles fijos, grandes y fáciles de leer</div>
+                  <div className="mt-1 text-sm text-white/70">Una pantalla prioritaria para leer en grande</div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={handleToggleFloating}
                     onPointerDown={(event) => event.stopPropagation()}
@@ -571,7 +571,7 @@ export default function Page() {
               ) : null}
 
               {showTeleprompterContent ? (
-              <div className={`mt-4 grid gap-4 ${isFloating ? "grid-cols-1" : "md:grid-cols-2"}`}>
+              <div className={`mt-4 grid gap-4 ${isFloating ? "grid-cols-1" : "md:grid-cols-[1.18fr_0.82fr]"}`}>
                 <div className="rounded-[1.4rem] border border-fuchsia-500/20 bg-[radial-gradient(circle_at_top_left,rgba(120,84,255,0.22),rgba(9,9,13,0.97))] p-5 md:p-6">
                   <div className="flex items-center justify-between gap-3">
                     <div className="text-[10px] uppercase tracking-[0.35em] text-white/35">Lo que dice Evo</div>
@@ -581,15 +581,15 @@ export default function Page() {
                     </div>
                   </div>
 
-                  <div className="mt-4 min-h-[220px] md:min-h-[320px]">
+                  <div className="mt-4 min-h-[360px] md:min-h-[520px]">
                     {latestAssistantText ? (
                       <p
-                        className="max-w-none font-semibold tracking-[-0.05em] text-white"
+                        className="max-w-none whitespace-pre-wrap break-words font-semibold tracking-[-0.04em] text-white"
                         style={{
                           fontSize: isFloating
                             ? "clamp(1.9rem, 4vw, 4.2rem)"
-                            : "clamp(1.8rem, 3.8vw, 4.6rem)",
-                          lineHeight: 1.08,
+                            : "clamp(1.35rem, 2.4vw, 3.15rem)",
+                          lineHeight: 1.04,
                         }}
                       >
                         {latestAssistantText}
@@ -627,15 +627,15 @@ export default function Page() {
                     </div>
                   </div>
 
-                  <div className="mt-4 min-h-[220px] md:min-h-[320px]">
+                  <div className="mt-4 min-h-[360px] md:min-h-[520px]">
                     {latestUserText ? (
                       <p
-                        className="max-w-none font-medium tracking-[-0.04em] text-white/95"
+                        className="max-w-none whitespace-pre-wrap break-words font-medium tracking-[-0.03em] text-white/95"
                         style={{
                           fontSize: isFloating
                             ? "clamp(1.4rem, 2.8vw, 3rem)"
-                            : "clamp(1.35rem, 2.6vw, 3.2rem)",
-                          lineHeight: 1.12,
+                            : "clamp(1.05rem, 1.9vw, 2.25rem)",
+                          lineHeight: 1.1,
                         }}
                       >
                         {latestUserText}
@@ -664,7 +664,7 @@ export default function Page() {
               ) : null}
 
               {showTeleprompterContent ? (
-                <div className="mt-4 max-h-[220px] space-y-3 overflow-y-auto pr-1 hide-scrollbar">
+                <div className="mt-4 max-h-[240px] space-y-3 overflow-y-auto pr-1 hide-scrollbar">
                   {entries.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 p-4 text-sm text-white/45">
                       La transcripción completa aparecerá aquí mientras dure la llamada.
@@ -689,7 +689,7 @@ export default function Page() {
                             </span>
                           ) : null}
                         </div>
-                        <p className="text-base leading-7 text-white/90 md:text-[1.05rem] md:leading-8">
+                        <p className="whitespace-pre-wrap break-words text-[0.95rem] leading-6 text-white/90 md:text-[1rem] md:leading-7">
                           {entry.text || "..."}
                         </p>
                       </div>
