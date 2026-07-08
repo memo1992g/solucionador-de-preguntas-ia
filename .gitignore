@@ -11,3 +11,6 @@ service-account.json
 *.log
 frontend/dev.*
 backend/realtime.*
+
+.vercel
+.env*
