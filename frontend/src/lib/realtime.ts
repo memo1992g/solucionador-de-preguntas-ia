@@ -164,9 +164,21 @@ export async function startRealtimeCall(callbacks: RealtimeCallbacks) {
   const dc = pc.createDataChannel("oai-events");
   callbacks.onLog?.("DataChannel oai-events creado.");
   const transcripts = createTranscriptStore(callbacks.onTranscriptChange);
+  let responseInProgress = false;
 
   const sendEvent = (payload: unknown) => {
     if (dc.readyState === "open") dc.send(JSON.stringify(payload));
+  };
+
+  const requestAssistantResponse = (reason: string) => {
+    if (responseInProgress) {
+      callbacks.onLog?.(`response.create omitido (${reason}): ya hay una respuesta activa.`);
+      return;
+    }
+
+    responseInProgress = true;
+    callbacks.onLog?.(`Enviando response.create (${reason}).`);
+    sendEvent({ type: "response.create" });
   };
 
   const stop = () => {
@@ -184,9 +196,9 @@ export async function startRealtimeCall(callbacks: RealtimeCallbacks) {
   };
 
   dc.onopen = () => {
-    callbacks.onLog?.("DataChannel abierto. Enviando primer response.create.");
+    callbacks.onLog?.("DataChannel abierto.");
     callbacks.onStatusChange("escuchando");
-    sendEvent({ type: "response.create" });
+    requestAssistantResponse("inicio");
   };
 
   dc.onmessage = (message) => {
@@ -199,7 +211,15 @@ export async function startRealtimeCall(callbacks: RealtimeCallbacks) {
 
     switch (event.type) {
       case "response.created":
+        responseInProgress = true;
         callbacks.onLog?.(`response.created: ${event.response?.id || "sin-id"}`);
+        break;
+      case "response.done":
+      case "response.completed":
+      case "response.cancelled":
+      case "response.failed":
+        responseInProgress = false;
+        callbacks.onLog?.(`response.${event.type.split(".")[1]}: ${event.response?.id || "sin-id"}`);
         break;
       case "conversation.item.input_audio_transcription.delta":
         if (event.item_id && typeof event.delta === "string") {
@@ -214,7 +234,6 @@ export async function startRealtimeCall(callbacks: RealtimeCallbacks) {
           if (!accepted) {
             callbacks.onLog?.("Transcripción de usuario ignorada por ruido o silencio.");
             callbacks.onStatusChange("escuchando");
-            sendEvent({ type: "response.create" });
             break;
           }
           callbacks.onLog?.(`Transcripcion usuario completada: ${transcript}`);
@@ -223,6 +242,7 @@ export async function startRealtimeCall(callbacks: RealtimeCallbacks) {
       case "response.output_text.delta":
       case "response.output_audio_transcript.delta":
         if (event.item_id && typeof event.delta === "string") {
+          responseInProgress = true;
           callbacks.onStatusChange("respondiendo");
           transcripts.upsert(event.item_id, "Asistente", event.delta);
         }
