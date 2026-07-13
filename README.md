@@ -54,6 +54,22 @@ Backend: `http://localhost:3001`
 - Respuesta hablada en tiempo real
 - Panel de logs
 - Indicador de calidad de audio
+- Bóveda de conocimiento del proyecto embebida en el prompt del asistente
+
+## Bóveda de conocimiento
+
+El asistente ahora arranca con una base de conocimiento interna sobre:
+
+- alcance del proyecto
+- arquitectura del frontend y backend
+- flujo de la llamada en tiempo real
+- reglas de respuesta
+- troubleshooting básico
+
+La bóveda vive en:
+
+- `frontend/src/lib/server/knowledge-vault.ts`
+- `backend/src/services/knowledge-vault.js`
 
 ## Despliegue en Vercel
 

@@ -1,3 +1,5 @@
+import { buildKnowledgeVaultInstructions } from "./knowledge-vault";
+
 const REALTIME_MODEL = "gpt-realtime";
 const REALTIME_VOICE = "coral";
 
@@ -21,6 +23,8 @@ Saludo inicial:
 - Si el usuario responde que sí, continúa con la conversación.
 - Si responde que no, espera con paciencia y mantén un tono amable.
 - Si hace una pregunta, responde primero la pregunta y luego sigue el flujo natural.
+
+${buildKnowledgeVaultInstructions()}
 
 Tu conocimiento incluye:
 - Desarrollo full stack

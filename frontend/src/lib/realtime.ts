@@ -19,6 +19,11 @@ export type RealtimeCallbacks = {
   onLog?: (message: string) => void;
 };
 
+export type RealtimeCallController = {
+  stop: () => void;
+  setMicEnabled: (enabled: boolean) => void;
+};
+
 const REALTIME_URL = "https://api.openai.com/v1/realtime/calls";
 const SHORT_FILLS = new Set(["mm", "mmm", "eh", "ah", "uh", "hmm", "aja", "ajá", "um", "emm"]);
 
@@ -195,6 +200,11 @@ export async function startRealtimeCall(callbacks: RealtimeCallbacks) {
     } catch { /* no-op */ }
   };
 
+  const setMicEnabled = (enabled: boolean) => {
+    audioTrack.enabled = enabled;
+    callbacks.onLog?.(enabled ? "Micrófono reactivado con barra espaciadora." : "Micrófono pausado con barra espaciadora.");
+  };
+
   dc.onopen = () => {
     callbacks.onLog?.("DataChannel abierto.");
     callbacks.onStatusChange("escuchando");
@@ -290,5 +300,5 @@ export async function startRealtimeCall(callbacks: RealtimeCallbacks) {
 
   callbacks.onStatusChange("escuchando");
 
-  return { stop, pc, dc, audio };
+  return { stop, setMicEnabled, pc, dc, audio };
 }

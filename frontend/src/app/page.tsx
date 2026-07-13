@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { startRealtimeCall } from "@/lib/realtime";
-import type { AudioQuality, CallStatus, TranscriptEntry } from "@/lib/realtime";
+import type { AudioQuality, CallStatus, RealtimeCallController, TranscriptEntry } from "@/lib/realtime";
 import { CallStatus as StatusBadge } from "@/components/CallStatus";
 
 const demoMode = String(process.env.NEXT_PUBLIC_DEMO_MODE || "").toLowerCase() === "true";
@@ -58,7 +58,9 @@ export default function Page() {
   const [floatingPosition, setFloatingPosition] = useState<FloatingPosition | null>(null);
   const [startPromptOpen, setStartPromptOpen] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
-  const callRef = useRef<{ stop: () => void } | null>(null);
+  const [isMicPaused, setIsMicPaused] = useState(false);
+  const callRef = useRef<RealtimeCallController | null>(null);
+  const isMicPausedRef = useRef(false);
   const transcriptEndRef = useRef<HTMLDivElement | null>(null);
   const floatingShellRef = useRef<HTMLElement | null>(null);
   const dragStateRef = useRef<{
@@ -145,6 +147,40 @@ export default function Page() {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [entries]);
 
+  useEffect(() => {
+    isMicPausedRef.current = isMicPaused;
+  }, [isMicPaused]);
+
+  useEffect(() => {
+    if (!isCalling) return;
+
+    const isEditableTarget = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return false;
+      return target.matches("input, textarea, select") || target.isContentEditable;
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.code !== "Space" || event.repeat) return;
+      if (isEditableTarget(event.target)) return;
+      event.preventDefault();
+      toggleMicPausedState();
+    };
+
+    const restoreMic = () => {
+      if (!isMicPausedRef.current) return;
+      setMicPausedState(false);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("blur", restoreMic);
+    document.addEventListener("visibilitychange", restoreMic);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("blur", restoreMic);
+      document.removeEventListener("visibilitychange", restoreMic);
+    };
+  }, [isCalling]);
+
   const orbStyle = useMemo(() => {
     const boost = isCalling ? 1 + audioLevel * 0.55 : 1;
     const glow = 0.25 + audioLevel * 0.8;
@@ -176,6 +212,16 @@ export default function Page() {
     [entries]
   );
 
+  const setMicPausedState = (paused: boolean) => {
+    isMicPausedRef.current = paused;
+    setIsMicPaused(paused);
+    callRef.current?.setMicEnabled(!paused);
+  };
+
+  const toggleMicPausedState = () => {
+    setMicPausedState(!isMicPausedRef.current);
+  };
+
   const startCall = async () => {
     setError(null);
     setEntries([]);
@@ -196,6 +242,7 @@ export default function Page() {
 
       callRef.current = call;
       setIsCalling(true);
+      setMicPausedState(false);
       setStatus("escuchando");
     } catch (err) {
       const message = err instanceof Error ? err.message : "No pude iniciar la llamada IA. Revisa la API Key de OpenAI.";
@@ -231,6 +278,8 @@ export default function Page() {
     callRef.current?.stop();
     callRef.current = null;
     setIsCalling(false);
+    isMicPausedRef.current = false;
+    setIsMicPaused(false);
     setStatus("esperando");
     setAudioLevel(0.08);
     setAudioQuality("Ruido moderado");
@@ -450,8 +499,58 @@ export default function Page() {
               <div className="text-right text-[11px] text-white/45">
                 <div>{formatNowClock()}</div>
                 <div>WebRTC activo</div>
+                {isCalling ? <div>{isMicPaused ? "Micrófono pausado" : "Micrófono activo"}</div> : null}
               </div>
             </div>
+
+            {isCalling ? (
+              <div
+                className={`mt-3 rounded-2xl border px-4 py-3 transition ${
+                  isMicPaused
+                    ? "border-amber-500/25 bg-amber-500/10 text-amber-100"
+                    : "border-emerald-500/20 bg-emerald-500/10 text-emerald-100"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[10px] uppercase tracking-[0.28em] text-white/45">Control rápido</div>
+                    <div className="mt-1 text-sm font-medium">
+                      {isMicPaused ? "Micrófono detenido por barra espaciadora" : "Micrófono escuchando"}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${
+                        isMicPaused ? "bg-amber-300 shadow-[0_0_16px_rgba(251,191,36,0.55)]" : "bg-emerald-300 shadow-[0_0_16px_rgba(74,222,128,0.55)]"
+                      }`}
+                    />
+                    <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[11px] font-semibold text-white/90">
+                      {isMicPaused ? "Pausado" : "Activo"}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-2 text-[11px] text-white/65">
+                  Presioná <span className="rounded-md border border-white/15 bg-black/30 px-1.5 py-0.5 font-semibold text-white">Espacio</span> para alternar entre escuchar y pausar.
+                </div>
+                <button
+                  onClick={toggleMicPausedState}
+                  className={`mt-3 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[11px] font-semibold transition active:scale-[0.99] ${
+                    isMicPaused
+                      ? "border-amber-400/30 bg-amber-500/15 text-amber-100 hover:bg-amber-500/20"
+                      : "border-emerald-400/30 bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/20"
+                  }`}
+                >
+                  <span
+                    className={`h-2.5 w-2.5 rounded-full ${
+                      isMicPaused
+                        ? "bg-amber-300 shadow-[0_0_16px_rgba(251,191,36,0.55)]"
+                        : "bg-emerald-300 shadow-[0_0_16px_rgba(74,222,128,0.55)] animate-pulse"
+                    }`}
+                  />
+                  {isMicPaused ? "Reanudar escucha" : "Pausar escucha"}
+                </button>
+              </div>
+            ) : null}
 
             <div className="mt-3 flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
               <div>
@@ -465,13 +564,21 @@ export default function Page() {
 
             <div className="mt-4 flex items-center gap-3 rounded-[1.5rem] border border-white/10 bg-[radial-gradient(circle_at_center,rgba(18,18,28,0.92),rgba(5,5,7,0.96))] p-4">
               <div className="relative flex h-24 w-24 items-center justify-center rounded-full border border-white/10 bg-[radial-gradient(circle_at_center,rgba(22,22,34,1),rgba(7,7,10,0.98))]">
-                <div className="absolute inset-0 rounded-full bg-[conic-gradient(from_180deg,rgba(205,64,255,0.95),rgba(112,102,255,0.95),rgba(205,64,255,0.95))] opacity-80 blur-[1px]" style={orbStyle} />
+                <div
+                  className={`absolute inset-0 rounded-full bg-[conic-gradient(from_180deg,rgba(205,64,255,0.95),rgba(112,102,255,0.95),rgba(205,64,255,0.95))] opacity-80 blur-[1px] transition duration-300 ${
+                    isMicPaused ? "grayscale-0 saturate-75" : "animate-pulse"
+                  }`}
+                  style={orbStyle}
+                />
                 <div className="absolute inset-[2px] rounded-full bg-[radial-gradient(circle_at_center,rgba(18,18,28,0.96),rgba(6,6,10,0.98))]" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="flex h-16 w-16 flex-col items-center justify-center rounded-full border border-white/10 bg-black/55 backdrop-blur-md">
                     <span className="text-[9px] uppercase tracking-[0.3em] text-white/35">Voice</span>
                     <span className="mt-1 text-xs font-semibold text-white">AI</span>
                   </div>
+                </div>
+                <div className={`absolute -bottom-2 rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.28em] ${isMicPaused ? "border-amber-400/25 bg-amber-500/15 text-amber-100" : "border-emerald-400/25 bg-emerald-500/15 text-emerald-100"}`}>
+                  {isMicPaused ? "Pausado" : "Activo"}
                 </div>
               </div>
 
@@ -481,6 +588,16 @@ export default function Page() {
                     ? "La llamada está activa. Habla con naturalidad y la respuesta se irá viendo en pantalla mientras se escucha por audio."
                     : "Toca iniciar, concede permiso al micrófono y habla con el asistente en tiempo real."}
                 </p>
+                {isCalling ? (
+                  <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[11px] text-white/65">
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${
+                        isMicPaused ? "bg-amber-300 shadow-[0_0_16px_rgba(251,191,36,0.55)]" : "bg-emerald-300 shadow-[0_0_16px_rgba(74,222,128,0.55)]"
+                      }`}
+                    />
+                    <span>{isMicPaused ? "Espacio: micrófono pausado" : "Espacio: micrófono activo"}</span>
+                  </div>
+                ) : null}
                 <div className="mt-3 flex items-center gap-2">
                   <div className="h-2 flex-1 rounded-full bg-white/10">
                     <div className="h-2 rounded-full bg-gradient-to-r from-fuchsia-400 to-indigo-400 transition-all duration-75" style={{ width: `${Math.max(12, audioLevel * 100)}%` }} />
