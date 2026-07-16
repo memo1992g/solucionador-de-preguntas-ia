@@ -43,7 +43,7 @@ function normalizeLookupText(value: string) {
 }
 
 function toHumanExample(example: string) {
-  return `Yo lo diría así: ${example.replace(/^Ejemplo:\s*/i, "")}`;
+  return example.replace(/^Ejemplo:\s*/i, "").trim();
 }
 
 const TOPIC_STOP_WORDS = new Set([
@@ -92,325 +92,325 @@ const TOPIC_EXAMPLES: TopicExample[] = [
   {
     terms: ["herencia"],
     examples: {
-      conceptual: "Ejemplo: `Perro` hereda de `Animal` y reutiliza atributos y métodos.",
-      comparison: "Ejemplo: la herencia sirve para reutilizar comportamiento, pero no siempre es la mejor opción.",
-      advantage: "Ejemplo: usar herencia reduce duplicación cuando hay una relación clara entre clases.",
-      process: "Ejemplo: defines una clase base y luego extiendes su comportamiento en la clase hija.",
+      conceptual: "Ejemplo: como cuando un hijo aprende cosas de su papá o mamá.",
+      comparison: "Ejemplo: sirve cuando quieres repetir menos cosas y aprovechar lo que ya existe.",
+      advantage: "Ejemplo: te ahorra trabajo porque usas una base que ya está hecha.",
+      process: "Ejemplo: primero haces una base y luego otra parte usa esa misma base.",
     },
   },
   {
     terms: ["encapsulacion"],
     examples: {
-      conceptual: "Ejemplo: `CuentaBancaria` oculta su saldo y solo lo modifica por métodos.",
-      comparison: "Ejemplo: encapsular protege mejor el estado que exponer atributos públicos.",
-      advantage: "Ejemplo: encapsular mejora control, validación y mantenimiento.",
-      process: "Ejemplo: marcas los datos como privados y dejas métodos para leer o modificar.",
+      conceptual: "Ejemplo: como una caja de juguetes con tapa, donde guardas las cosas para que no se mezclen.",
+      comparison: "Ejemplo: es mejor que dejar todo tirado, porque así cuidas lo que tienes.",
+      advantage: "Ejemplo: te ayuda a mantener todo ordenado y protegido.",
+      process: "Ejemplo: guardas la información adentro y solo la sacas por una puerta segura.",
     },
   },
   {
     terms: ["polimorfismo"],
     examples: {
-      conceptual: "Ejemplo: `PagoTarjeta` y `PagoEfectivo` responden al mismo método `pagar()`.",
-      comparison: "Ejemplo: polimorfismo ayuda a cambiar implementaciones sin tocar el código que las usa.",
-      advantage: "Ejemplo: usar polimorfismo hace el código más flexible y limpio.",
-      process: "Ejemplo: defines una interfaz común y varias clases la implementan.",
+      conceptual: "Ejemplo: como usar el mismo control para prender cosas distintas.",
+      comparison: "Ejemplo: una misma orden sirve para varias cosas sin cambiar la idea principal.",
+      advantage: "Ejemplo: te deja cambiar una parte sin romper todo lo demás.",
+      process: "Ejemplo: haces una regla común y varias cosas la siguen a su manera.",
     },
   },
   {
     terms: ["api rest", "rest", "endpoint"],
     examples: {
-      conceptual: "Ejemplo: `GET /usuarios/1` devuelve el usuario con id 1.",
-      comparison: "Ejemplo: REST conviene cuando quieres endpoints simples y predecibles.",
-      advantage: "Ejemplo: usar REST facilita integración y mantenimiento del API.",
-      process: "Ejemplo: defines el recurso, el verbo HTTP y la respuesta JSON.",
+      conceptual: "Ejemplo: como un mesero que lleva tu pedido a la cocina y luego te trae la comida.",
+      comparison: "Ejemplo: es útil porque todos saben qué pedir y qué recibir.",
+      advantage: "Ejemplo: hace más fácil que dos sistemas se entiendan.",
+      process: "Ejemplo: pides algo, lo buscan y te devuelven la respuesta.",
     },
   },
   {
     terms: ["microservic"],
     examples: {
-      conceptual: "Ejemplo: `usuarios`, `pagos` y `pedidos` como servicios separados.",
-      comparison: "Ejemplo: microservicios sirven cuando necesitas escalar por dominio, no todo junto.",
-      advantage: "Ejemplo: ayudan a aislar despliegues y responsabilidades.",
-      process: "Ejemplo: separas el dominio en servicios y comunicas cada uno por API o cola.",
+      conceptual: "Ejemplo: como una feria con varios puestos, y cada puesto hace una cosa distinta.",
+      comparison: "Ejemplo: es mejor que tener un solo puesto que haga todo.",
+      advantage: "Ejemplo: si un puesto falla, los otros siguen funcionando.",
+      process: "Ejemplo: separas el trabajo en partes pequeñas y cada una ayuda por su lado.",
     },
   },
   {
     terms: ["servicio"],
     examples: {
-      conceptual: "Ejemplo: mover la lógica de negocio a un servicio y dejar el controlador delgado.",
-      comparison: "Ejemplo: un servicio bien definido es más mantenible que meter lógica en el controlador.",
-      advantage: "Ejemplo: separar servicios mejora lectura, pruebas y reutilización.",
-      process: "Ejemplo: el controlador recibe la petición y delega en el servicio.",
+      conceptual: "Ejemplo: como un ayudante que hace una tarea específica en la cocina.",
+      comparison: "Ejemplo: es mejor que meter todo en una sola persona.",
+      advantage: "Ejemplo: así cada quien sabe qué hacer y no se confunde.",
+      process: "Ejemplo: recibes la tarea y la pasas al ayudante correcto.",
     },
   },
   {
     terms: ["controlador", "controller"],
     examples: {
-      conceptual: "Ejemplo: el controlador recibe la petición y responde con JSON.",
-      comparison: "Ejemplo: el controlador no debería tener más lógica que la necesaria para orquestar.",
-      advantage: "Ejemplo: mantener el controlador delgado facilita mantenimiento.",
-      process: "Ejemplo: validas la entrada, llamas al servicio y devuelves la respuesta.",
+      conceptual: "Ejemplo: como la persona de la puerta que escucha y manda el pedido al lugar correcto.",
+      comparison: "Ejemplo: es mejor que solo organice el trabajo y no haga todo él mismo.",
+      advantage: "Ejemplo: así la app queda más ordenada y fácil de entender.",
+      process: "Ejemplo: recibe lo que le piden, lo pasa al ayudante y devuelve la respuesta.",
     },
   },
   {
     terms: ["repository", "repositorio"],
     examples: {
-      conceptual: "Ejemplo: el repositorio encapsula el acceso a datos.",
-      comparison: "Ejemplo: usar repositorios separa persistencia de negocio.",
-      advantage: "Ejemplo: simplifica pruebas y desacopla la base de datos.",
-      process: "Ejemplo: el servicio llama al repositorio para guardar o consultar.",
+      conceptual: "Ejemplo: como un cajón donde guardas y sacas información.",
+      comparison: "Ejemplo: es mejor que buscar cosas por toda la casa.",
+      advantage: "Ejemplo: te ayuda a encontrar y guardar datos más rápido.",
+      process: "Ejemplo: primero guardas la cosa en el cajón y luego la buscas cuando la necesitas.",
     },
   },
   {
     terms: ["middleware"],
     examples: {
-      conceptual: "Ejemplo: un middleware valida el token antes de entrar al endpoint.",
-      comparison: "Ejemplo: middleware conviene para lógica transversal como auth o logs.",
-      advantage: "Ejemplo: evita repetir validaciones en cada controlador.",
-      process: "Ejemplo: interceptas la petición, revisas la condición y luego continúas.",
+      conceptual: "Ejemplo: como un guardia en la puerta que revisa quién entra.",
+      comparison: "Ejemplo: es mejor poner un solo guardia que revisar a mano cada vez.",
+      advantage: "Ejemplo: evita que entren cosas o personas que no deben pasar.",
+      process: "Ejemplo: revisa primero, y si todo está bien, deja seguir.",
     },
   },
   {
     terms: ["jwt", "token", "auth", "autenticacion", "autorizacion"],
     examples: {
-      conceptual: "Ejemplo: el token valida la identidad del usuario antes de dejarlo pasar.",
-      comparison: "Ejemplo: JWT funciona bien cuando quieres autenticación stateless.",
-      advantage: "Ejemplo: usar token simplifica sesiones en sistemas distribuidos.",
-      process: "Ejemplo: generas el token al iniciar sesión y lo validas en cada request.",
+      conceptual: "Ejemplo: como una pulsera que te dejan en un parque para saber que ya entraste.",
+      comparison: "Ejemplo: es más fácil que enseñar tu nombre cada vez.",
+      advantage: "Ejemplo: te ayuda a entrar sin repetir todo otra vez.",
+      process: "Ejemplo: te dan la pulsera al entrar y la muestras después para pasar.",
     },
   },
   {
     terms: ["docker", "contenedor"],
     examples: {
-      conceptual: "Ejemplo: empaquetar la app en una imagen y correrla igual en cualquier entorno.",
-      comparison: "Ejemplo: Docker te da más consistencia que depender del equipo local.",
-      advantage: "Ejemplo: reduce errores entre desarrollo y producción.",
-      process: "Ejemplo: defines el Dockerfile, construyes la imagen y levantas el contenedor.",
+      conceptual: "Ejemplo: como una lonchera que lleva la comida igual a cualquier lugar.",
+      comparison: "Ejemplo: es mejor que llevar todo suelto, porque no se desordena.",
+      advantage: "Ejemplo: así funciona casi igual en cualquier computadora.",
+      process: "Ejemplo: metes todo en una caja y la abres donde la necesites.",
     },
   },
   {
     terms: ["ci/cd", "ci cd", "pipeline"],
     examples: {
-      conceptual: "Ejemplo: compilar, probar y desplegar automáticamente cada cambio.",
-      comparison: "Ejemplo: CI/CD acelera entrega frente a un despliegue manual.",
-      advantage: "Ejemplo: reduce errores humanos y hace más repetible el proceso.",
-      process: "Ejemplo: el pipeline corre tests, valida calidad y despliega si todo pasa.",
+      conceptual: "Ejemplo: como una fábrica donde primero revisan, luego empacan y al final envían.",
+      comparison: "Ejemplo: es mejor que hacer todo a mano porque va más rápido y ordenado.",
+      advantage: "Ejemplo: ayuda a que no se nos olvide ningún paso.",
+      process: "Ejemplo: pasa por una fila de revisión antes de salir.",
     },
   },
   {
     terms: ["transaccion", "atomic", "atomicidad"],
     examples: {
-      conceptual: "Ejemplo: o se guarda todo, o no se guarda nada.",
-      comparison: "Ejemplo: una transacción protege mejor la consistencia que operaciones sueltas.",
-      advantage: "Ejemplo: evita datos a medias cuando algo falla.",
-      process: "Ejemplo: agrupas las operaciones, confirmas con commit o haces rollback.",
+      conceptual: "Ejemplo: como comprar todo junto en una sola bolsa o no comprar nada.",
+      comparison: "Ejemplo: es mejor que dejar las cosas a medias.",
+      advantage: "Ejemplo: evita que algo quede incompleto si pasa un problema.",
+      process: "Ejemplo: haces todo el paquete y al final lo confirmas.",
     },
   },
   {
     terms: ["indice", "index"],
     examples: {
-      conceptual: "Ejemplo: crear un índice sobre `cliente_id` acelera búsquedas frecuentes.",
-      comparison: "Ejemplo: un índice mejora lectura, pero puede volver más lento el insert.",
-      advantage: "Ejemplo: sirve para consultas frecuentes sobre columnas clave.",
-      process: "Ejemplo: eliges la columna más usada en filtros y creas el índice.",
+      conceptual: "Ejemplo: como el índice de un libro que te dice dónde está cada cosa.",
+      comparison: "Ejemplo: es mejor que leer todo el libro para encontrar una página.",
+      advantage: "Ejemplo: te ayuda a encontrar respuestas mucho más rápido.",
+      process: "Ejemplo: marcas una página importante para ir directo ahí.",
     },
   },
   {
     terms: ["sql"],
     examples: {
-      conceptual: "Ejemplo: `SELECT * FROM clientes WHERE ciudad = 'San Salvador'`.",
-      comparison: "Ejemplo: SQL es ideal para consultas estructuradas y relaciones claras.",
-      advantage: "Ejemplo: da control fino sobre filtros, joins y agregaciones.",
-      process: "Ejemplo: defines tablas, consultas y restricciones según el modelo.",
+      conceptual: "Ejemplo: como preguntarle a un bibliotecario dónde está un libro.",
+      comparison: "Ejemplo: es mejor que buscar a ciegas en todo el cuarto.",
+      advantage: "Ejemplo: te ayuda a pedir solo lo que necesitas.",
+      process: "Ejemplo: haces la pregunta y la base te responde con la información.",
     },
   },
   {
     terms: ["join"],
     examples: {
-      conceptual: "Ejemplo: unir `clientes` con `pedidos` para obtener compras por usuario.",
-      comparison: "Ejemplo: el join te permite combinar datos sin duplicar información.",
-      advantage: "Ejemplo: facilita reportes y consultas relacionadas.",
-      process: "Ejemplo: conectas ambas tablas por su llave común.",
+      conceptual: "Ejemplo: como juntar dos piezas de rompecabezas para ver la imagen completa.",
+      comparison: "Ejemplo: es mejor que mirar dos listas por separado.",
+      advantage: "Ejemplo: te deja ver la relación entre dos cosas al mismo tiempo.",
+      process: "Ejemplo: unes las piezas que tienen algo en común.",
     },
   },
   {
     terms: ["normalizacion"],
     examples: {
-      conceptual: "Ejemplo: separar clientes y direcciones para evitar datos duplicados.",
-      comparison: "Ejemplo: normalizar mejora consistencia, aunque a veces complica consultas.",
-      advantage: "Ejemplo: reduce redundancia y errores de actualización.",
-      process: "Ejemplo: separas la información en tablas relacionadas.",
+      conceptual: "Ejemplo: como guardar los juguetes por tipo en cajas distintas.",
+      comparison: "Ejemplo: es mejor que meter todo mezclado en una sola caja.",
+      advantage: "Ejemplo: así encuentras las cosas fácil y no repites información.",
+      process: "Ejemplo: separas cada cosa en su lugar correcto.",
     },
   },
   {
     terms: ["base de datos", "bases de datos", "database", "db", "mysql", "postgres", "postgresql", "oracle", "sql server"],
     examples: {
-      conceptual: "Ejemplo: elegir una base relacional cuando necesitas consistencia y relaciones claras.",
-      comparison: "Ejemplo: una base relacional conviene para transacciones; una NoSQL para flexibilidad de esquema.",
-      advantage: "Ejemplo: una buena base de datos mejora consistencia, rendimiento y mantenimiento.",
-      process: "Ejemplo: modelas entidades, relaciones, índices y transacciones según el caso.",
+      conceptual: "Ejemplo: como una caja grande donde guardas toda la información ordenada.",
+      comparison: "Ejemplo: es mejor que tener papeles regados por todos lados.",
+      advantage: "Ejemplo: te ayuda a guardar y encontrar datos sin perderte.",
+      process: "Ejemplo: pones cada cosa en su lugar para encontrarla después.",
     },
   },
   {
     terms: ["cache", "caché"],
     examples: {
-      conceptual: "Ejemplo: guardar una respuesta frecuente para no recalcularla siempre.",
-      comparison: "Ejemplo: cachear ayuda cuando lees mucho más de lo que escribes.",
-      advantage: "Ejemplo: reduce latencia y carga del sistema.",
-      process: "Ejemplo: consultas el caché primero y vas a la fuente solo si no hay dato.",
+      conceptual: "Ejemplo: como tener una galleta cerca para no ir hasta la cocina cada vez.",
+      comparison: "Ejemplo: es mejor que volver a buscar lo mismo una y otra vez.",
+      advantage: "Ejemplo: te da la respuesta más rápido.",
+      process: "Ejemplo: primero miras tu bolsita y solo si no está, vas a buscarla.",
     },
   },
   {
     terms: ["queue", "cola", "rabbitmq", "kafka"],
     examples: {
-      conceptual: "Ejemplo: enviar un pedido a una cola para procesarlo de forma asíncrona.",
-      comparison: "Ejemplo: una cola ayuda a desacoplar procesos y absorber picos de carga.",
-      advantage: "Ejemplo: mejora resiliencia y evita bloquear al usuario.",
-      process: "Ejemplo: publicas el evento, otro servicio lo consume y lo procesa.",
+      conceptual: "Ejemplo: como la fila para subir al tobogán, donde cada niño espera su turno.",
+      comparison: "Ejemplo: es mejor que empujarse todos al mismo tiempo.",
+      advantage: "Ejemplo: ayuda a que todo se haga con orden.",
+      process: "Ejemplo: te pones en la fila, esperas y luego te toca.",
     },
   },
   {
     terms: ["testing", "unitario", "unit test", "prueba unitaria"],
     examples: {
-      conceptual: "Ejemplo: un test verifica que al guardar un usuario se cree el registro correctamente.",
-      comparison: "Ejemplo: las pruebas unitarias son más rápidas que las de integración.",
-      advantage: "Ejemplo: ayudan a detectar fallos antes de llegar a producción.",
-      process: "Ejemplo: preparas el caso, ejecutas la función y validas el resultado esperado.",
+      conceptual: "Ejemplo: como probar un juguete antes de regalarlo.",
+      comparison: "Ejemplo: es mejor revisar primero que descubrir el problema después.",
+      advantage: "Ejemplo: evita sorpresas cuando ya todo está funcionando.",
+      process: "Ejemplo: lo enciendes, ves si funciona y revisas si salió bien.",
     },
   },
   {
     terms: ["seguridad", "security", "seguro"],
     examples: {
-      conceptual: "Ejemplo: validar el token antes de permitir acceso al endpoint.",
-      comparison: "Ejemplo: seguridad por capas es mejor que confiar solo en el frontend.",
-      advantage: "Ejemplo: protege datos y reduce riesgos de acceso indebido.",
-      process: "Ejemplo: autenticas, autorizas y registras el acceso.",
+      conceptual: "Ejemplo: como poner una cerradura en la puerta de tu casa.",
+      comparison: "Ejemplo: es mejor que dejar la puerta abierta.",
+      advantage: "Ejemplo: protege lo que no quieres que otros toquen.",
+      process: "Ejemplo: revisas quién entra y solo dejas pasar a quien sí puede.",
     },
   },
   {
     terms: ["observabilidad", "logs", "metricas", "tracing"],
     examples: {
-      conceptual: "Ejemplo: revisar logs y métricas para detectar dónde falla el sistema.",
-      comparison: "Ejemplo: observabilidad da más visibilidad que solo mirar errores sueltos.",
-      advantage: "Ejemplo: ayuda a encontrar problemas más rápido en producción.",
-      process: "Ejemplo: registras logs, mides métricas y sigues trazas cuando hay incidentes.",
+      conceptual: "Ejemplo: como una linterna que te deja ver en dónde se perdió algo.",
+      comparison: "Ejemplo: es mejor que adivinar qué pasó.",
+      advantage: "Ejemplo: te ayuda a encontrar problemas más rápido.",
+      process: "Ejemplo: miras las pistas hasta saber dónde está el error.",
     },
   },
   {
     terms: ["performance"],
     examples: {
-      conceptual: "Ejemplo: paginar resultados para no traer miles de registros de una vez.",
-      comparison: "Ejemplo: optimizar consultas suele dar más impacto que microajustar código.",
-      advantage: "Ejemplo: mejora respuesta y experiencia del usuario.",
-      process: "Ejemplo: mides el cuello de botella y corriges donde más pesa.",
+      conceptual: "Ejemplo: como encontrar un atajo para llegar más rápido al parque.",
+      comparison: "Ejemplo: es mejor ir por el camino corto que por el largo.",
+      advantage: "Ejemplo: hace que todo responda más rápido.",
+      process: "Ejemplo: buscas qué está tardando más y lo arreglas primero.",
     },
   },
   {
     terms: ["escalabilidad"],
     examples: {
-      conceptual: "Ejemplo: dividir carga entre servicios o instancias cuando crece el tráfico.",
-      comparison: "Ejemplo: escalar horizontalmente funciona mejor cuando el sistema está desacoplado.",
-      advantage: "Ejemplo: permite crecer sin rehacer todo el sistema.",
-      process: "Ejemplo: repartes carga, agregas capacidad y monitoreas el consumo.",
+      conceptual: "Ejemplo: como poner más cajas en una fila cuando llegan más personas.",
+      comparison: "Ejemplo: es mejor que una sola persona atienda todo.",
+      advantage: "Ejemplo: así puedes atender a más sin que se haga un enredo.",
+      process: "Ejemplo: agregas más ayuda cuando hay más trabajo.",
     },
   },
   {
     terms: ["ia", "inteligencia artificial", "llm", "prompt", "agente", "openai"],
     examples: {
-      conceptual: "Ejemplo: usar un modelo para resumir, clasificar o responder preguntas.",
-      comparison: "Ejemplo: un LLM sirve mejor para lenguaje natural que un flujo rígido de reglas.",
-      advantage: "Ejemplo: acelera tareas repetitivas y aporta asistencia inteligente.",
-      process: "Ejemplo: das contexto, defines instrucciones y validas la salida del modelo.",
+      conceptual: "Ejemplo: como un robot que escucha y trata de ayudarte con respuestas.",
+      comparison: "Ejemplo: es mejor que buscar todo en un libro gigante.",
+      advantage: "Ejemplo: te ayuda a hacer tareas más rápido.",
+      process: "Ejemplo: le dices qué quieres, lo piensa y te responde.",
     },
   },
   {
     terms: ["spring boot"],
     examples: {
-      conceptual: "Ejemplo: exponer un endpoint `GET /health` para validar que el servicio responde.",
-      comparison: "Ejemplo: Spring Boot acelera arranque frente a configurar todo a mano.",
-      advantage: "Ejemplo: reduce boilerplate y estandariza backend Java.",
-      process: "Ejemplo: creas el controlador, el servicio y el repositorio, y Spring los conecta.",
+      conceptual: "Ejemplo: como una caja de herramientas ya lista para empezar a construir.",
+      comparison: "Ejemplo: es mejor que armar todo desde cero.",
+      advantage: "Ejemplo: te ahorra tiempo para comenzar más rápido.",
+      process: "Ejemplo: sacas las piezas listas y empiezas a usarlas.",
     },
   },
   {
     terms: ["java"],
     examples: {
-      conceptual: "Ejemplo: definir una clase `Usuario` con atributos y métodos simples.",
-      comparison: "Ejemplo: Java conviene cuando buscas robustez y ecosistema empresarial.",
-      advantage: "Ejemplo: te da tipado fuerte, madurez y buena mantenibilidad.",
-      process: "Ejemplo: modelas clases, servicios y repositorios con una separación clara.",
+      conceptual: "Ejemplo: como construir con bloques de LEGO bien ordenados.",
+      comparison: "Ejemplo: es mejor cuando quieres algo fuerte y ordenado.",
+      advantage: "Ejemplo: te ayuda a hacer programas claros y confiables.",
+      process: "Ejemplo: unes bloques, luego otros bloques, hasta formar la casa.",
     },
   },
   {
     terms: ["angular"],
     examples: {
-      conceptual: "Ejemplo: un componente Angular separa plantilla, lógica y estilos.",
-      comparison: "Ejemplo: Angular conviene en apps grandes con estructura y patrones claros.",
-      advantage: "Ejemplo: te da módulos, DI y una arquitectura muy ordenada.",
-      process: "Ejemplo: creas el componente, el servicio y conectas ambos por inyección de dependencias.",
+      conceptual: "Ejemplo: como un kit de LEGO que ya trae instrucciones para armarlo.",
+      comparison: "Ejemplo: es mejor cuando quieres todo muy ordenado desde el inicio.",
+      advantage: "Ejemplo: te da piezas y reglas para no perderte.",
+      process: "Ejemplo: sigues las instrucciones, armas la pieza y la conectas con otra.",
     },
   },
   {
     terms: ["react"],
     examples: {
-      conceptual: "Ejemplo: un componente recibe props y renderiza una tarjeta reutilizable.",
-      comparison: "Ejemplo: React es más flexible cuando quieres armar tu propia estructura.",
-      advantage: "Ejemplo: facilita UI reutilizable y composición.",
-      process: "Ejemplo: creas componentes pequeños, compartes estado y actualizas la vista.",
+      conceptual: "Ejemplo: como jugar con bloques que puedes mover y cambiar rápido.",
+      comparison: "Ejemplo: es mejor cuando quieres armarlo a tu manera.",
+      advantage: "Ejemplo: te deja hacer cosas que se repiten sin volverlas a escribir.",
+      process: "Ejemplo: haces pedacitos pequeños y luego los juntas.",
     },
   },
   {
     terms: ["hook"],
     examples: {
-      conceptual: "Ejemplo: `useState` guarda el estado de un formulario.",
-      comparison: "Ejemplo: los hooks simplifican la lógica frente a patrones más viejos.",
-      advantage: "Ejemplo: hacen el código más limpio y reutilizable.",
-      process: "Ejemplo: declaras el estado, reaccionas a cambios y renderizas de nuevo.",
+      conceptual: "Ejemplo: como un ganchito pequeño que te ayuda a agarrar algo.",
+      comparison: "Ejemplo: es mejor que repetir la misma idea una y otra vez.",
+      advantage: "Ejemplo: hace que la tarea sea más fácil de usar otra vez.",
+      process: "Ejemplo: lo conectas y luego lo usas cuando lo necesitas.",
     },
   },
   {
     terms: ["estado", "state"],
     examples: {
-      conceptual: "Ejemplo: actualizar el estado para que la interfaz cambie al instante.",
-      comparison: "Ejemplo: manejar bien el estado evita duplicación y errores de UI.",
-      advantage: "Ejemplo: mejora la respuesta visual de la aplicación.",
-      process: "Ejemplo: cambias un valor y la vista se actualiza automáticamente.",
+      conceptual: "Ejemplo: como el marcador de un juego que dice cuánto va el partido.",
+      comparison: "Ejemplo: es mejor tenerlo claro para no confundirte.",
+      advantage: "Ejemplo: ayuda a que la pantalla cambie cuando algo cambia.",
+      process: "Ejemplo: cambias el número y todo se actualiza solo.",
     },
   },
   {
     terms: ["next js", "nextjs"],
     examples: {
-      conceptual: "Ejemplo: una página en `Next.js` carga datos del servidor antes de renderizar.",
-      comparison: "Ejemplo: Next.js conviene cuando quieres SSR, routing y buena estructura.",
-      advantage: "Ejemplo: combina frontend y backend ligero en una sola base.",
-      process: "Ejemplo: defines la página, obtienes los datos y renderizas con SSR o ISR.",
+      conceptual: "Ejemplo: como un cuaderno que ya trae la respuesta lista cuando lo abres.",
+      comparison: "Ejemplo: es mejor cuando quieres que algo cargue rápido y ordenado.",
+      advantage: "Ejemplo: ayuda a mostrar la página más rápido.",
+      process: "Ejemplo: primero preparas la hoja y luego la enseñas.",
     },
   },
   {
     terms: ["node"],
     examples: {
-      conceptual: "Ejemplo: crear un pequeño servicio HTTP con Node.js para responder peticiones.",
-      comparison: "Ejemplo: Node.js funciona bien en APIs ligeras y tiempo real.",
-      advantage: "Ejemplo: es rápido para construir servicios y automatizaciones.",
-      process: "Ejemplo: levantas el servidor, expones rutas y conectas la lógica.",
+      conceptual: "Ejemplo: como un mensajero que lleva y trae recados rápido.",
+      comparison: "Ejemplo: es mejor cuando quieres responder sin esperar mucho.",
+      advantage: "Ejemplo: sirve para hacer cosas veloces y sencillas.",
+      process: "Ejemplo: pones al mensajero a trabajar y le das sus rutas.",
     },
   },
   {
     terms: ["python"],
     examples: {
-      conceptual: "Ejemplo: usar Python para automatizar tareas o procesar datos.",
-      comparison: "Ejemplo: Python es muy fuerte en scripting, datos e IA.",
-      advantage: "Ejemplo: acelera prototipos y tareas de análisis.",
-      process: "Ejemplo: defines el script, procesas entradas y devuelves resultados simples.",
+      conceptual: "Ejemplo: como una navaja suiza con muchas herramientas.",
+      comparison: "Ejemplo: es mejor cuando quieres hacer muchas tareas con poco esfuerzo.",
+      advantage: "Ejemplo: te sirve para resolver cosas rápido y fácil.",
+      process: "Ejemplo: tomas una herramienta, la usas y ves el resultado.",
     },
   },
   {
     terms: ["c#"],
     examples: {
-      conceptual: "Ejemplo: crear una clase `Cliente` con propiedades y métodos claros.",
-      comparison: "Ejemplo: C# es una gran opción si estás en ecosistema Microsoft.",
-      advantage: "Ejemplo: ofrece buen soporte para aplicaciones empresariales y APIs.",
-      process: "Ejemplo: modelas entidades, servicios y controladores con una arquitectura limpia.",
+      conceptual: "Ejemplo: como usar un cuaderno bien ordenado para escribir tareas.",
+      comparison: "Ejemplo: es mejor cuando trabajas con herramientas de Microsoft.",
+      advantage: "Ejemplo: te ayuda a hacer programas grandes sin perder el orden.",
+      process: "Ejemplo: escribes, organizas y conectas cada parte con cuidado.",
     },
   },
 ];
@@ -477,25 +477,25 @@ function buildInterviewExample(question: string, answer: string) {
 
   if (style === "comparison") {
     return topic === "este concepto"
-      ? "Yo lo diría así: lo comparo con otra opción y elijo según el caso."
-      : `Yo lo diría así: comparo ${topic} con otra opción y elijo según el caso.`;
+      ? "Es como comparar dos juguetes para ver cuál te sirve más."
+      : `Es como comparar ${topic} con otra opción para ver cuál te sirve más.`;
   }
 
   if (style === "advantage") {
     return topic === "este concepto"
-      ? "Yo lo diría así: lo uso porque aporta una ventaja clara."
-      : `Yo lo diría así: uso ${topic} porque aporta una ventaja clara.`;
+      ? "Es como elegir algo que te ayuda a hacer las cosas más fácil."
+      : `Es como elegir ${topic} porque te ayuda a hacer las cosas más fácil.`;
   }
 
   if (style === "process") {
     return topic === "este concepto"
-      ? "Yo lo diría así: lo explico paso a paso en un caso real."
-      : `Yo lo diría así: lo explico paso a paso usando ${topic}.`;
+      ? "Es como armar algo paso a paso, primero una parte y luego la otra."
+      : `Es como armar ${topic} paso a paso, primero una parte y luego la otra.`;
   }
 
   return topic === "este concepto"
-    ? "Yo lo diría así: lo uso en un caso real de entrevista."
-    : `Yo lo diría así: uso ${topic} en un caso real.`;
+    ? "Es como usar una idea para resolver una tarea de la vida real."
+    : `Es como usar ${topic} para resolver una tarea de la vida real.`;
 }
 
 type FloatingPosition = {
