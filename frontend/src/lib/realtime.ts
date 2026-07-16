@@ -1,4 +1,11 @@
 import { requestRealtimeSession } from "./api";
+import {
+  buildResponseLanguageInstructions,
+  detectContentLanguage,
+  lockConversationLanguage,
+  type ContentLanguage,
+  normalizeLanguageText,
+} from "./language";
 
 export type CallStatus = "esperando" | "conectando" | "escuchando" | "respondiendo" | "error";
 
@@ -26,120 +33,17 @@ export type RealtimeCallController = {
 
 const REALTIME_URL = "https://api.openai.com/v1/realtime/calls";
 const SHORT_FILLS = new Set(["mm", "mmm", "eh", "ah", "uh", "hmm", "aja", "ajá", "um", "emm"]);
-type ConversationLanguage = "es" | "en";
-
-const ENGLISH_HINTS = new Set([
-  "the",
-  "and",
-  "what",
-  "how",
-  "why",
-  "can",
-  "could",
-  "would",
-  "should",
-  "you",
-  "i",
-  "am",
-  "is",
-  "are",
-  "when",
-  "where",
-  "because",
-  "there",
-  "this",
-  "that",
-  "with",
-  "from",
-  "for",
-  "about",
-  "between",
-  "good",
-  "better",
-  "thanks",
-  "thank",
-  "please",
-  "hello",
-  "hi",
-  "explain",
-  "tell",
-  "show",
-  "help",
-  "need",
-  "want",
-  "today",
-  "dependency",
-  "injection",
-  "difference",
-]);
-
-const SPANISH_HINTS = new Set([
-  "el",
-  "la",
-  "los",
-  "las",
-  "que",
-  "como",
-  "porque",
-  "para",
-  "entre",
-  "cuando",
-  "donde",
-  "qué",
-  "por",
-  "con",
-  "gracias",
-  "hola",
-  "buen",
-  "mejor",
-]);
 
 function normalizeSpeechText(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
+  return normalizeLanguageText(value);
 }
 
 function usefulCharacterCount(value: string) {
-  return normalizeSpeechText(value).replace(/[^a-z0-9]/g, "").length;
+  return normalizeLanguageText(value).replace(/[^a-z0-9]/g, "").length;
 }
 
-function detectConversationLanguage(value: string): ConversationLanguage {
-  const text = normalizeSpeechText(value);
-  if (!text) return "es";
-
-  if (/[áéíóúñ]/i.test(text)) return "es";
-  if (/[äöüß]/i.test(text)) return "en";
-
-  const tokens = text.split(" ").filter(Boolean);
-  let englishScore = 0;
-  let spanishScore = 0;
-
-  for (const token of tokens) {
-    if (ENGLISH_HINTS.has(token)) englishScore += 1;
-    if (SPANISH_HINTS.has(token)) spanishScore += 1;
-  }
-
-  return englishScore > spanishScore ? "en" : "es";
-}
-
-function buildLanguageResponseInstructions(language: ConversationLanguage) {
-  if (language === "en") {
-    return [
-      "Answer only in English.",
-      "Do not mix Spanish and English in the same response.",
-      "Keep the tone natural, concise, and interview-like.",
-    ].join(" ");
-  }
-
-  return [
-    "Responde solo en español.",
-    "No mezcles español e inglés en la misma respuesta.",
-    "Mantén un tono natural, breve y de entrevista.",
-  ].join(" ");
+function detectConversationLanguage(value: string): ContentLanguage {
+  return detectContentLanguage(value);
 }
 
 function isDoubtfulTranscript(value: string) {
@@ -272,7 +176,7 @@ export async function startRealtimeCall(callbacks: RealtimeCallbacks) {
   callbacks.onLog?.("DataChannel oai-events creado.");
   const transcripts = createTranscriptStore(callbacks.onTranscriptChange);
   let responseInProgress = false;
-  let activeLanguage: ConversationLanguage | null = null;
+  let activeLanguage: ContentLanguage | null = null;
 
   const sendEvent = (payload: unknown) => {
     if (dc.readyState === "open") dc.send(JSON.stringify(payload));
@@ -285,7 +189,7 @@ export async function startRealtimeCall(callbacks: RealtimeCallbacks) {
     }
 
     responseInProgress = true;
-    const languageInstructions = activeLanguage ? buildLanguageResponseInstructions(activeLanguage) : undefined;
+    const languageInstructions = activeLanguage ? buildResponseLanguageInstructions(activeLanguage) : undefined;
     callbacks.onLog?.(`Enviando response.create (${reason})${activeLanguage ? ` en ${activeLanguage}` : ""}.`);
     sendEvent({
       type: "response.create",
@@ -354,7 +258,7 @@ export async function startRealtimeCall(callbacks: RealtimeCallbacks) {
             callbacks.onStatusChange("escuchando");
             break;
           }
-          activeLanguage = detectConversationLanguage(transcript);
+          activeLanguage = lockConversationLanguage(activeLanguage, detectConversationLanguage(transcript));
           callbacks.onLog?.(`Transcripcion usuario completada: ${transcript}`);
           requestAssistantResponse("transcripcion_usuario");
         }

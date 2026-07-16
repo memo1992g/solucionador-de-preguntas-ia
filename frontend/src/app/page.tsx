@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { startRealtimeCall } from "@/lib/realtime";
+import { detectContentLanguage, normalizeLanguageText } from "@/lib/language";
 import type { AudioQuality, CallStatus, RealtimeCallController, TranscriptEntry } from "@/lib/realtime";
 import { CallStatus as StatusBadge } from "@/components/CallStatus";
 
@@ -33,101 +34,8 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-function normalizeLookupText(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-type ContentLanguage = "es" | "en";
-
 function toHumanExample(example: string) {
   return example.replace(/^(Ejemplo|Example):\s*/i, "").trim();
-}
-
-const ENGLISH_HINTS = new Set([
-  "the",
-  "and",
-  "what",
-  "how",
-  "why",
-  "can",
-  "could",
-  "would",
-  "should",
-  "you",
-  "i",
-  "am",
-  "is",
-  "are",
-  "when",
-  "where",
-  "because",
-  "there",
-  "this",
-  "that",
-  "with",
-  "from",
-  "for",
-  "about",
-  "between",
-  "good",
-  "better",
-  "thanks",
-  "thank",
-  "please",
-  "hello",
-  "hi",
-  "explain",
-  "tell",
-  "show",
-  "help",
-  "need",
-  "want",
-  "today",
-  "dependency",
-  "injection",
-  "difference",
-]);
-
-const SPANISH_HINTS = new Set([
-  "el",
-  "la",
-  "los",
-  "las",
-  "que",
-  "como",
-  "porque",
-  "para",
-  "entre",
-  "cuando",
-  "donde",
-  "qué",
-  "por",
-  "con",
-  "mejor",
-]);
-
-function detectContentLanguage(...values: string[]): ContentLanguage {
-  const text = normalizeLookupText(values.join(" "));
-  if (!text) return "es";
-
-  if (/[áéíóúñ]/i.test(text)) return "es";
-  if (/[äöüß]/i.test(text)) return "en";
-
-  const tokens = text.split(" ").filter(Boolean);
-  let englishScore = 0;
-  let spanishScore = 0;
-
-  for (const token of tokens) {
-    if (ENGLISH_HINTS.has(token)) englishScore += 1;
-    if (SPANISH_HINTS.has(token)) spanishScore += 1;
-  }
-
-  return englishScore > spanishScore ? "en" : "es";
 }
 
 const TOPIC_STOP_WORDS = new Set([
@@ -827,7 +735,7 @@ const TOPIC_EXAMPLES_EN: TopicExample[] = [
 ];
 
 function inferInterviewStyle(question: string, answer: string): InterviewStyle {
-  const source = normalizeLookupText(`${question} ${answer}`);
+  const source = normalizeLanguageText(`${question} ${answer}`);
 
   if (
     source.includes("diferencia") ||
@@ -885,7 +793,7 @@ function inferInterviewStyle(question: string, answer: string): InterviewStyle {
 }
 
 function buildInterviewExample(question: string, answer: string) {
-  const source = normalizeLookupText(`${question} ${answer}`);
+  const source = normalizeLanguageText(`${question} ${answer}`);
   const style = inferInterviewStyle(question, answer);
   const language = detectContentLanguage(question, answer);
   const topicExamples = language === "en" ? TOPIC_EXAMPLES_EN : TOPIC_EXAMPLES_ES;
@@ -896,7 +804,7 @@ function buildInterviewExample(question: string, answer: string) {
     }
   }
 
-  const questionTopic = normalizeLookupText(question)
+  const questionTopic = normalizeLanguageText(question)
     .replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, "")
     .split(" ")
     .filter((word) => word && !TOPIC_STOP_WORDS.has(word));
