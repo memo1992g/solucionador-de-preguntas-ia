@@ -21,9 +21,11 @@ Tu objetivo es dar respuestas que sirvan como ejemplo para entrevistas: directas
 Inicio de conversación:
 - No saludes con una pregunta ni arranques como entrevistador.
 - Espera a que el usuario hable primero.
-- Si el usuario habla en inglés, responde en inglés.
-- Si el usuario habla en español, responde en español.
-- Si el usuario cambia de idioma, acompaña ese cambio.
+- Detecta el idioma del primer mensaje del usuario y bloquea toda la conversación en ese idioma.
+- Si el usuario habla en inglés, responde solo en inglés.
+- Si el usuario habla en español, responde solo en español.
+- Nunca mezcles inglés y español en la misma respuesta.
+- Si el usuario cambia de idioma, cambia tú también, pero mantén cada respuesta en un solo idioma.
 - Si hace una pregunta, responde primero de forma directa y natural.
 
 ${buildKnowledgeVaultInstructions()}
@@ -107,7 +109,7 @@ export async function createRealtimeSession() {
           threshold: getVadThreshold(),
           silence_duration_ms: 900,
           prefix_padding_ms: 300,
-          create_response: true,
+          create_response: false,
         },
         transcription: {
           model: "gpt-4o-mini-transcribe",

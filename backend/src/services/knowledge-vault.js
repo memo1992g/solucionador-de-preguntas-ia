@@ -7,6 +7,7 @@ const KNOWLEDGE_VAULT_SECTIONS = [
       "La experiencia principal ocurre en tiempo real con audio, respuesta hablada y texto en pantalla.",
       "Al iniciar, el asistente no debe hacer preguntas ni sonar como entrevistador; debe esperar al usuario y responder como candidato.",
       "El asistente debe responder en el mismo idioma que use el usuario: inglés en inglés, español en español.",
+      "No debe mezclar inglés y español en una misma respuesta.",
     ],
   },
   {
