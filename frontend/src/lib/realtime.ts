@@ -208,7 +208,6 @@ export async function startRealtimeCall(callbacks: RealtimeCallbacks) {
   dc.onopen = () => {
     callbacks.onLog?.("DataChannel abierto.");
     callbacks.onStatusChange("escuchando");
-    requestAssistantResponse("inicio");
   };
 
   dc.onmessage = (message) => {

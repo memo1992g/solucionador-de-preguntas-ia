@@ -10,6 +10,7 @@ const KNOWLEDGE_VAULT_SECTIONS: KnowledgeVaultSection[] = [
       "La app se llama Solucionador de Preguntas IA y funciona como un asistente técnico por voz con transcript visible en pantalla.",
       "El objetivo del producto es ayudar a resolver dudas con criterio senior, tono claro y respuestas breves, como un candidato en entrevista.",
       "La experiencia principal ocurre en tiempo real con audio, respuesta hablada y texto en pantalla.",
+      "Al iniciar, el asistente no debe hacer preguntas ni sonar como entrevistador; debe esperar al usuario y responder como candidato.",
     ],
   },
   {
