@@ -42,8 +42,68 @@ function normalizeLookupText(value: string) {
     .trim();
 }
 
+type ContentLanguage = "es" | "en";
+
 function toHumanExample(example: string) {
-  return example.replace(/^Ejemplo:\s*/i, "").trim();
+  return example.replace(/^(Ejemplo|Example):\s*/i, "").trim();
+}
+
+const ENGLISH_HINTS = new Set([
+  "the",
+  "and",
+  "what",
+  "how",
+  "why",
+  "when",
+  "where",
+  "because",
+  "there",
+  "this",
+  "that",
+  "with",
+  "from",
+  "for",
+  "about",
+  "between",
+  "good",
+  "better",
+]);
+
+const SPANISH_HINTS = new Set([
+  "el",
+  "la",
+  "los",
+  "las",
+  "que",
+  "como",
+  "porque",
+  "para",
+  "entre",
+  "cuando",
+  "donde",
+  "qué",
+  "por",
+  "con",
+  "mejor",
+]);
+
+function detectContentLanguage(...values: string[]): ContentLanguage {
+  const text = normalizeLookupText(values.join(" "));
+  if (!text) return "es";
+
+  if (/[áéíóúñ]/i.test(text)) return "es";
+  if (/[äöüß]/i.test(text)) return "en";
+
+  const tokens = text.split(" ").filter(Boolean);
+  let englishScore = 0;
+  let spanishScore = 0;
+
+  for (const token of tokens) {
+    if (ENGLISH_HINTS.has(token)) englishScore += 1;
+    if (SPANISH_HINTS.has(token)) spanishScore += 1;
+  }
+
+  return englishScore > spanishScore ? "en" : "es";
 }
 
 const TOPIC_STOP_WORDS = new Set([
@@ -88,7 +148,7 @@ type TopicExample = {
   examples: Record<InterviewStyle, string>;
 };
 
-const TOPIC_EXAMPLES: TopicExample[] = [
+const TOPIC_EXAMPLES_ES: TopicExample[] = [
   {
     terms: ["herencia"],
     examples: {
@@ -415,15 +475,346 @@ const TOPIC_EXAMPLES: TopicExample[] = [
   },
 ];
 
+const TOPIC_EXAMPLES_EN: TopicExample[] = [
+  {
+    terms: ["herencia"],
+    examples: {
+      conceptual: "Example: like a child learning things from their mom or dad.",
+      comparison: "Example: it helps when you want to repeat less and reuse what already exists.",
+      advantage: "Example: it saves work because you start from something already built.",
+      process: "Example: first you build a base, then another part uses that same base.",
+    },
+  },
+  {
+    terms: ["encapsulacion"],
+    examples: {
+      conceptual: "Example: like a toy box with a lid, where you keep things from mixing together.",
+      comparison: "Example: it is better than leaving everything scattered around.",
+      advantage: "Example: it helps keep things organized and protected.",
+      process: "Example: you keep the information inside and only open it through a safe door.",
+    },
+  },
+  {
+    terms: ["polimorfismo"],
+    examples: {
+      conceptual: "Example: like using the same remote to turn on different things.",
+      comparison: "Example: one order works for several things without changing the main idea.",
+      advantage: "Example: it lets you change one part without breaking the rest.",
+      process: "Example: you make one common rule and several things follow it their own way.",
+    },
+  },
+  {
+    terms: ["api rest", "rest", "endpoint"],
+    examples: {
+      conceptual: "Example: like a waiter taking your order to the kitchen and bringing the food back.",
+      comparison: "Example: it works well because everyone knows what to ask for and what to expect.",
+      advantage: "Example: it makes it easier for two systems to understand each other.",
+      process: "Example: you ask for something, they look for it, and they send back the answer.",
+    },
+  },
+  {
+    terms: ["microservic"],
+    examples: {
+      conceptual: "Example: like a fair with many stalls, and each stall does one job.",
+      comparison: "Example: it is better than having one stall do everything.",
+      advantage: "Example: if one stall fails, the others keep working.",
+      process: "Example: you split the work into small parts and each one helps on its own.",
+    },
+  },
+  {
+    terms: ["servicio"],
+    examples: {
+      conceptual: "Example: like an assistant who does one specific task in the kitchen.",
+      comparison: "Example: it is better than putting everything on one person.",
+      advantage: "Example: everyone knows their job and nobody gets confused.",
+      process: "Example: you receive the task and pass it to the right helper.",
+    },
+  },
+  {
+    terms: ["controlador", "controller"],
+    examples: {
+      conceptual: "Example: like the person at the door who listens and sends the request to the right place.",
+      comparison: "Example: it is better if it only organizes the work instead of doing everything itself.",
+      advantage: "Example: that keeps the app cleaner and easier to understand.",
+      process: "Example: it receives the request, passes it to the helper, and returns the answer.",
+    },
+  },
+  {
+    terms: ["repository", "repositorio"],
+    examples: {
+      conceptual: "Example: like a drawer where you store and take information out.",
+      comparison: "Example: it is better than looking for things all over the house.",
+      advantage: "Example: it helps you find and save data faster.",
+      process: "Example: first you put the item in the drawer, then you look for it when needed.",
+    },
+  },
+  {
+    terms: ["middleware"],
+    examples: {
+      conceptual: "Example: like a guard at the door checking who gets in.",
+      comparison: "Example: it is better than checking by hand every single time.",
+      advantage: "Example: it keeps the wrong people or things from getting through.",
+      process: "Example: it checks first, and if everything is fine, it lets them continue.",
+    },
+  },
+  {
+    terms: ["jwt", "token", "auth", "autenticacion", "autorizacion"],
+    examples: {
+      conceptual: "Example: like a wristband at a park that shows you already got in.",
+      comparison: "Example: it is easier than saying your name every time.",
+      advantage: "Example: it lets you get in without repeating everything again.",
+      process: "Example: they give you the wristband when you enter and you show it later to pass through.",
+    },
+  },
+  {
+    terms: ["docker", "contenedor"],
+    examples: {
+      conceptual: "Example: like a lunch box that carries the food the same way anywhere.",
+      comparison: "Example: it is better than carrying everything loose because nothing gets messy.",
+      advantage: "Example: it works almost the same on any computer.",
+      process: "Example: you put everything in a box and open it wherever you need it.",
+    },
+  },
+  {
+    terms: ["ci/cd", "ci cd", "pipeline"],
+    examples: {
+      conceptual: "Example: like a factory where they inspect, pack, and then ship.",
+      comparison: "Example: it is better than doing everything by hand because it is faster and more organized.",
+      advantage: "Example: it helps us not forget any step.",
+      process: "Example: it goes through a review line before it leaves.",
+    },
+  },
+  {
+    terms: ["transaccion", "atomic", "atomicidad"],
+    examples: {
+      conceptual: "Example: like buying everything in one bag or not buying anything at all.",
+      comparison: "Example: it is better than leaving things half done.",
+      advantage: "Example: it avoids ending up with something incomplete if a problem happens.",
+      process: "Example: you do the whole package and confirm it at the end.",
+    },
+  },
+  {
+    terms: ["indice", "index"],
+    examples: {
+      conceptual: "Example: like the index in a book that tells you where everything is.",
+      comparison: "Example: it is better than reading the whole book to find one page.",
+      advantage: "Example: it helps you find answers much faster.",
+      process: "Example: you mark an important page so you can jump straight there.",
+    },
+  },
+  {
+    terms: ["sql"],
+    examples: {
+      conceptual: "Example: like asking a librarian where a book is.",
+      comparison: "Example: it is better than searching blindly all over the room.",
+      advantage: "Example: it helps you ask only for what you need.",
+      process: "Example: you ask the question and the database gives you the information.",
+    },
+  },
+  {
+    terms: ["join"],
+    examples: {
+      conceptual: "Example: like putting two puzzle pieces together to see the full picture.",
+      comparison: "Example: it is better than looking at two lists separately.",
+      advantage: "Example: it lets you see the relationship between two things at the same time.",
+      process: "Example: you connect the pieces that share something in common.",
+    },
+  },
+  {
+    terms: ["normalizacion"],
+    examples: {
+      conceptual: "Example: like keeping toys sorted into different boxes by type.",
+      comparison: "Example: it is better than mixing everything into one box.",
+      advantage: "Example: it makes things easier to find and avoids repeating information.",
+      process: "Example: you put each thing in its proper place.",
+    },
+  },
+  {
+    terms: ["base de datos", "bases de datos", "database", "db", "mysql", "postgres", "postgresql", "oracle", "sql server"],
+    examples: {
+      conceptual: "Example: like a big box where you keep all the information in order.",
+      comparison: "Example: it is better than having papers scattered everywhere.",
+      advantage: "Example: it helps you store and find data without getting lost.",
+      process: "Example: you place each thing in its own spot so you can find it later.",
+    },
+  },
+  {
+    terms: ["cache", "caché"],
+    examples: {
+      conceptual: "Example: like keeping a cookie nearby so you do not go back to the kitchen every time.",
+      comparison: "Example: it is better than looking for the same thing over and over.",
+      advantage: "Example: it gives you the answer faster.",
+      process: "Example: you check your pocket first, and only go look if it is not there.",
+    },
+  },
+  {
+    terms: ["queue", "cola", "rabbitmq", "kafka"],
+    examples: {
+      conceptual: "Example: like the line for the slide, where each kid waits their turn.",
+      comparison: "Example: it is better than everyone pushing at once.",
+      advantage: "Example: it helps keep things orderly.",
+      process: "Example: you get in line, wait, and then it is your turn.",
+    },
+  },
+  {
+    terms: ["testing", "unitario", "unit test", "prueba unitaria"],
+    examples: {
+      conceptual: "Example: like testing a toy before giving it away.",
+      comparison: "Example: it is better to check first than to find the problem later.",
+      advantage: "Example: it avoids surprises once everything is already running.",
+      process: "Example: you turn it on, see if it works, and check if it came out right.",
+    },
+  },
+  {
+    terms: ["seguridad", "security", "seguro"],
+    examples: {
+      conceptual: "Example: like putting a lock on your front door.",
+      comparison: "Example: it is better than leaving the door open.",
+      advantage: "Example: it protects what you do not want others to touch.",
+      process: "Example: you check who comes in and only let in the right people.",
+    },
+  },
+  {
+    terms: ["observabilidad", "logs", "metricas", "tracing"],
+    examples: {
+      conceptual: "Example: like a flashlight that helps you see where something got lost.",
+      comparison: "Example: it is better than guessing what happened.",
+      advantage: "Example: it helps you find problems faster.",
+      process: "Example: you follow the clues until you find the error.",
+    },
+  },
+  {
+    terms: ["performance"],
+    examples: {
+      conceptual: "Example: like finding a shortcut to get to the park faster.",
+      comparison: "Example: it is better to take the short road than the long one.",
+      advantage: "Example: it makes everything respond faster.",
+      process: "Example: you look for what is taking the longest and fix that first.",
+    },
+  },
+  {
+    terms: ["escalabilidad"],
+    examples: {
+      conceptual: "Example: like adding more boxes in a line when more people arrive.",
+      comparison: "Example: it is better than having one person handle everything.",
+      advantage: "Example: it lets you serve more people without creating a mess.",
+      process: "Example: you add more help when there is more work.",
+    },
+  },
+  {
+    terms: ["ia", "inteligencia artificial", "llm", "prompt", "agente", "openai"],
+    examples: {
+      conceptual: "Example: like a robot that listens and tries to help with answers.",
+      comparison: "Example: it is better than searching through a giant book.",
+      advantage: "Example: it helps you finish tasks faster.",
+      process: "Example: you tell it what you want, it thinks, and it answers you.",
+    },
+  },
+  {
+    terms: ["spring boot"],
+    examples: {
+      conceptual: "Example: like a toolbox that is ready to use right away.",
+      comparison: "Example: it is better than building everything from scratch.",
+      advantage: "Example: it saves time so you can start faster.",
+      process: "Example: you grab the ready pieces and start using them.",
+    },
+  },
+  {
+    terms: ["java"],
+    examples: {
+      conceptual: "Example: like building with LEGO blocks that are neatly organized.",
+      comparison: "Example: it is better when you want something strong and well organized.",
+      advantage: "Example: it helps you make clear and reliable programs.",
+      process: "Example: you connect blocks, then more blocks, until the house is built.",
+    },
+  },
+  {
+    terms: ["angular"],
+    examples: {
+      conceptual: "Example: like a LEGO kit that already comes with instructions.",
+      comparison: "Example: it is better when you want everything organized from the start.",
+      advantage: "Example: it gives you pieces and rules so you do not get lost.",
+      process: "Example: you follow the instructions, build the piece, and connect it to another.",
+    },
+  },
+  {
+    terms: ["react"],
+    examples: {
+      conceptual: "Example: like playing with blocks you can move and change quickly.",
+      comparison: "Example: it is better when you want to build it your own way.",
+      advantage: "Example: it lets you reuse things that repeat without writing them again.",
+      process: "Example: you make small pieces and then put them together.",
+    },
+  },
+  {
+    terms: ["hook"],
+    examples: {
+      conceptual: "Example: like a small hook that helps you grab something.",
+      comparison: "Example: it is better than repeating the same idea over and over.",
+      advantage: "Example: it makes the task easier to use again.",
+      process: "Example: you connect it and then use it whenever you need it.",
+    },
+  },
+  {
+    terms: ["estado", "state"],
+    examples: {
+      conceptual: "Example: like the scoreboard in a game that shows the current score.",
+      comparison: "Example: it is better when it is clear so you do not get confused.",
+      advantage: "Example: it helps the screen change when something changes.",
+      process: "Example: you change the number and everything updates by itself.",
+    },
+  },
+  {
+    terms: ["next js", "nextjs"],
+    examples: {
+      conceptual: "Example: like a notebook that already has the answer ready when you open it.",
+      comparison: "Example: it is better when you want something to load fast and stay organized.",
+      advantage: "Example: it helps show the page faster.",
+      process: "Example: first you prepare the page, then you show it.",
+    },
+  },
+  {
+    terms: ["node"],
+    examples: {
+      conceptual: "Example: like a messenger who carries notes back and forth fast.",
+      comparison: "Example: it is better when you want a response without waiting too long.",
+      advantage: "Example: it is good for fast and simple things.",
+      process: "Example: you put the messenger to work and give them their routes.",
+    },
+  },
+  {
+    terms: ["python"],
+    examples: {
+      conceptual: "Example: like a Swiss army knife with many tools.",
+      comparison: "Example: it is better when you want to do many tasks with little effort.",
+      advantage: "Example: it helps you solve things quickly and easily.",
+      process: "Example: you take one tool, use it, and see the result.",
+    },
+  },
+  {
+    terms: ["c#"],
+    examples: {
+      conceptual: "Example: like using a well-organized notebook to write tasks.",
+      comparison: "Example: it is better when you work with Microsoft tools.",
+      advantage: "Example: it helps you build large programs without losing order.",
+      process: "Example: you write, organize, and connect each part carefully.",
+    },
+  },
+];
+
 function inferInterviewStyle(question: string, answer: string): InterviewStyle {
   const source = normalizeLookupText(`${question} ${answer}`);
 
   if (
     source.includes("diferencia") ||
+    source.includes("difference") ||
     source.includes("compar") ||
     source.includes(" vs ") ||
+    source.includes(" compare ") ||
     source.includes("cual conviene") ||
     source.includes("cuál conviene") ||
+    source.includes("which one") ||
+    source.includes("best option") ||
     source.includes("mejor opcion") ||
     source.includes("mejor opción")
   ) {
@@ -432,12 +823,16 @@ function inferInterviewStyle(question: string, answer: string): InterviewStyle {
 
   if (
     source.includes("ventaja") ||
+    source.includes("benefit") ||
+    source.includes("advantage") ||
     source.includes("beneficio") ||
     source.includes("por que usar") ||
     source.includes("porque usar") ||
     source.includes("por qué usar") ||
+    source.includes("why use") ||
     source.includes("por que elegir") ||
     source.includes("porque elegir") ||
+    source.includes("why choose") ||
     source.includes("por qué elegir")
   ) {
     return "advantage";
@@ -445,11 +840,18 @@ function inferInterviewStyle(question: string, answer: string): InterviewStyle {
 
   if (
     source.includes("como") ||
+    source.includes("how") ||
     source.includes("paso") ||
+    source.includes("step") ||
     source.includes("proceso") ||
+    source.includes("process") ||
     source.includes("implementar") ||
+    source.includes("implement") ||
     source.includes("crear") ||
+    source.includes("create") ||
     source.includes("construir") ||
+    source.includes("build") ||
+    source.includes("workflow") ||
     source.includes("flujo")
   ) {
     return "process";
@@ -461,8 +863,10 @@ function inferInterviewStyle(question: string, answer: string): InterviewStyle {
 function buildInterviewExample(question: string, answer: string) {
   const source = normalizeLookupText(`${question} ${answer}`);
   const style = inferInterviewStyle(question, answer);
+  const language = detectContentLanguage(question, answer);
+  const topicExamples = language === "en" ? TOPIC_EXAMPLES_EN : TOPIC_EXAMPLES_ES;
 
-  for (const mapping of TOPIC_EXAMPLES) {
+  for (const mapping of topicExamples) {
     if (mapping.terms.some((term) => source.includes(term))) {
       return toHumanExample(mapping.examples[style]);
     }
@@ -474,28 +878,45 @@ function buildInterviewExample(question: string, answer: string) {
     .filter((word) => word && !TOPIC_STOP_WORDS.has(word));
 
   const topic = questionTopic.slice(0, 3).join(" ") || "este concepto";
+  const fallbackTopic = language === "en" ? "this concept" : "este concepto";
 
   if (style === "comparison") {
-    return topic === "este concepto"
-      ? "Es como comparar dos juguetes para ver cuál te sirve más."
-      : `Es como comparar ${topic} con otra opción para ver cuál te sirve más.`;
+    return topic === fallbackTopic
+      ? (language === "en"
+          ? "It is like comparing two toys to see which one works better for you."
+          : "Es como comparar dos juguetes para ver cuál te sirve más.")
+      : language === "en"
+        ? `It is like comparing ${topic} with another option to see which one works better for you.`
+        : `Es como comparar ${topic} con otra opción para ver cuál te sirve más.`;
   }
 
   if (style === "advantage") {
-    return topic === "este concepto"
-      ? "Es como elegir algo que te ayuda a hacer las cosas más fácil."
-      : `Es como elegir ${topic} porque te ayuda a hacer las cosas más fácil.`;
+    return topic === fallbackTopic
+      ? (language === "en"
+          ? "It is like choosing something that makes things easier."
+          : "Es como elegir algo que te ayuda a hacer las cosas más fácil.")
+      : language === "en"
+        ? `It is like choosing ${topic} because it helps you do things more easily.`
+        : `Es como elegir ${topic} porque te ayuda a hacer las cosas más fácil.`;
   }
 
   if (style === "process") {
-    return topic === "este concepto"
-      ? "Es como armar algo paso a paso, primero una parte y luego la otra."
-      : `Es como armar ${topic} paso a paso, primero una parte y luego la otra.`;
+    return topic === fallbackTopic
+      ? (language === "en"
+          ? "It is like building something step by step, first one part and then the next."
+          : "Es como armar algo paso a paso, primero una parte y luego la otra.")
+      : language === "en"
+        ? `It is like building ${topic} step by step, first one part and then the next.`
+        : `Es como armar ${topic} paso a paso, primero una parte y luego la otra.`;
   }
 
-  return topic === "este concepto"
-    ? "Es como usar una idea para resolver una tarea de la vida real."
-    : `Es como usar ${topic} para resolver una tarea de la vida real.`;
+  return topic === fallbackTopic
+    ? (language === "en"
+        ? "It is like using an idea to solve a real-life task."
+        : "Es como usar una idea para resolver una tarea de la vida real.")
+    : language === "en"
+      ? `It is like using ${topic} to solve a real-life task.`
+      : `Es como usar ${topic} para resolver una tarea de la vida real.`;
 }
 
 type FloatingPosition = {

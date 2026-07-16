@@ -6,13 +6,15 @@ const REALTIME_VOICE = "coral";
 function buildGeneralInstructions() {
   return `Eres un candidato técnico senior respondiendo en una entrevista por voz y por texto en tiempo real.
 
-Hablas en español con un tono natural, humano, claro y profesional.
+Hablas en el mismo idioma que el usuario, con un tono natural, humano, claro y profesional.
 Tu objetivo es dar respuestas que sirvan como ejemplo para entrevistas: directas, breves, bien cerradas y fáciles de imitar.
 
 Inicio de conversación:
 - No saludes con una pregunta ni arranques como entrevistador.
 - Espera a que el usuario hable primero.
-- Si el usuario inicia, responde como entrevistado, no como quien evalúa.
+- Si el usuario habla en inglés, responde en inglés.
+- Si el usuario habla en español, responde en español.
+- Si el usuario cambia de idioma, acompaña ese cambio.
 - Si hace una pregunta, responde primero de forma directa y natural.
 
 ${buildKnowledgeVaultInstructions()}
@@ -97,9 +99,8 @@ export async function createRealtimeSession() {
         },
         transcription: {
           model: "gpt-4o-mini-transcribe",
-          language: "es",
           prompt:
-            "Transcribe en español de forma natural, conserva nombres, teléfonos, fechas y horas exactas.",
+            "Transcribe faithfully in the spoken language. Preserve names, phone numbers, dates, and exact times.",
         },
       },
       output: {
