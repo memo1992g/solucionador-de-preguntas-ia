@@ -32,6 +32,471 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
+function normalizeLookupText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function toHumanExample(example: string) {
+  return `Yo lo diría así: ${example.replace(/^Ejemplo:\s*/i, "")}`;
+}
+
+const TOPIC_STOP_WORDS = new Set([
+  "que",
+  "es",
+  "como",
+  "para",
+  "de",
+  "del",
+  "la",
+  "el",
+  "los",
+  "las",
+  "un",
+  "una",
+  "y",
+  "o",
+  "en",
+  "por",
+  "con",
+  "sobre",
+  "explica",
+  "definicion",
+  "dime",
+  "hablame",
+  "muestrame",
+  "cual",
+  "cuál",
+  "cuando",
+  "cuándo",
+  "diferencia",
+  "ventaja",
+  "ventajas",
+  "desventaja",
+  "desventajas",
+]);
+
+type InterviewStyle = "conceptual" | "comparison" | "advantage" | "process";
+
+type TopicExample = {
+  terms: string[];
+  examples: Record<InterviewStyle, string>;
+};
+
+const TOPIC_EXAMPLES: TopicExample[] = [
+  {
+    terms: ["herencia"],
+    examples: {
+      conceptual: "Ejemplo: `Perro` hereda de `Animal` y reutiliza atributos y métodos.",
+      comparison: "Ejemplo: la herencia sirve para reutilizar comportamiento, pero no siempre es la mejor opción.",
+      advantage: "Ejemplo: usar herencia reduce duplicación cuando hay una relación clara entre clases.",
+      process: "Ejemplo: defines una clase base y luego extiendes su comportamiento en la clase hija.",
+    },
+  },
+  {
+    terms: ["encapsulacion"],
+    examples: {
+      conceptual: "Ejemplo: `CuentaBancaria` oculta su saldo y solo lo modifica por métodos.",
+      comparison: "Ejemplo: encapsular protege mejor el estado que exponer atributos públicos.",
+      advantage: "Ejemplo: encapsular mejora control, validación y mantenimiento.",
+      process: "Ejemplo: marcas los datos como privados y dejas métodos para leer o modificar.",
+    },
+  },
+  {
+    terms: ["polimorfismo"],
+    examples: {
+      conceptual: "Ejemplo: `PagoTarjeta` y `PagoEfectivo` responden al mismo método `pagar()`.",
+      comparison: "Ejemplo: polimorfismo ayuda a cambiar implementaciones sin tocar el código que las usa.",
+      advantage: "Ejemplo: usar polimorfismo hace el código más flexible y limpio.",
+      process: "Ejemplo: defines una interfaz común y varias clases la implementan.",
+    },
+  },
+  {
+    terms: ["api rest", "rest", "endpoint"],
+    examples: {
+      conceptual: "Ejemplo: `GET /usuarios/1` devuelve el usuario con id 1.",
+      comparison: "Ejemplo: REST conviene cuando quieres endpoints simples y predecibles.",
+      advantage: "Ejemplo: usar REST facilita integración y mantenimiento del API.",
+      process: "Ejemplo: defines el recurso, el verbo HTTP y la respuesta JSON.",
+    },
+  },
+  {
+    terms: ["microservic"],
+    examples: {
+      conceptual: "Ejemplo: `usuarios`, `pagos` y `pedidos` como servicios separados.",
+      comparison: "Ejemplo: microservicios sirven cuando necesitas escalar por dominio, no todo junto.",
+      advantage: "Ejemplo: ayudan a aislar despliegues y responsabilidades.",
+      process: "Ejemplo: separas el dominio en servicios y comunicas cada uno por API o cola.",
+    },
+  },
+  {
+    terms: ["servicio"],
+    examples: {
+      conceptual: "Ejemplo: mover la lógica de negocio a un servicio y dejar el controlador delgado.",
+      comparison: "Ejemplo: un servicio bien definido es más mantenible que meter lógica en el controlador.",
+      advantage: "Ejemplo: separar servicios mejora lectura, pruebas y reutilización.",
+      process: "Ejemplo: el controlador recibe la petición y delega en el servicio.",
+    },
+  },
+  {
+    terms: ["controlador", "controller"],
+    examples: {
+      conceptual: "Ejemplo: el controlador recibe la petición y responde con JSON.",
+      comparison: "Ejemplo: el controlador no debería tener más lógica que la necesaria para orquestar.",
+      advantage: "Ejemplo: mantener el controlador delgado facilita mantenimiento.",
+      process: "Ejemplo: validas la entrada, llamas al servicio y devuelves la respuesta.",
+    },
+  },
+  {
+    terms: ["repository", "repositorio"],
+    examples: {
+      conceptual: "Ejemplo: el repositorio encapsula el acceso a datos.",
+      comparison: "Ejemplo: usar repositorios separa persistencia de negocio.",
+      advantage: "Ejemplo: simplifica pruebas y desacopla la base de datos.",
+      process: "Ejemplo: el servicio llama al repositorio para guardar o consultar.",
+    },
+  },
+  {
+    terms: ["middleware"],
+    examples: {
+      conceptual: "Ejemplo: un middleware valida el token antes de entrar al endpoint.",
+      comparison: "Ejemplo: middleware conviene para lógica transversal como auth o logs.",
+      advantage: "Ejemplo: evita repetir validaciones en cada controlador.",
+      process: "Ejemplo: interceptas la petición, revisas la condición y luego continúas.",
+    },
+  },
+  {
+    terms: ["jwt", "token", "auth", "autenticacion", "autorizacion"],
+    examples: {
+      conceptual: "Ejemplo: el token valida la identidad del usuario antes de dejarlo pasar.",
+      comparison: "Ejemplo: JWT funciona bien cuando quieres autenticación stateless.",
+      advantage: "Ejemplo: usar token simplifica sesiones en sistemas distribuidos.",
+      process: "Ejemplo: generas el token al iniciar sesión y lo validas en cada request.",
+    },
+  },
+  {
+    terms: ["docker", "contenedor"],
+    examples: {
+      conceptual: "Ejemplo: empaquetar la app en una imagen y correrla igual en cualquier entorno.",
+      comparison: "Ejemplo: Docker te da más consistencia que depender del equipo local.",
+      advantage: "Ejemplo: reduce errores entre desarrollo y producción.",
+      process: "Ejemplo: defines el Dockerfile, construyes la imagen y levantas el contenedor.",
+    },
+  },
+  {
+    terms: ["ci/cd", "ci cd", "pipeline"],
+    examples: {
+      conceptual: "Ejemplo: compilar, probar y desplegar automáticamente cada cambio.",
+      comparison: "Ejemplo: CI/CD acelera entrega frente a un despliegue manual.",
+      advantage: "Ejemplo: reduce errores humanos y hace más repetible el proceso.",
+      process: "Ejemplo: el pipeline corre tests, valida calidad y despliega si todo pasa.",
+    },
+  },
+  {
+    terms: ["transaccion", "atomic", "atomicidad"],
+    examples: {
+      conceptual: "Ejemplo: o se guarda todo, o no se guarda nada.",
+      comparison: "Ejemplo: una transacción protege mejor la consistencia que operaciones sueltas.",
+      advantage: "Ejemplo: evita datos a medias cuando algo falla.",
+      process: "Ejemplo: agrupas las operaciones, confirmas con commit o haces rollback.",
+    },
+  },
+  {
+    terms: ["indice", "index"],
+    examples: {
+      conceptual: "Ejemplo: crear un índice sobre `cliente_id` acelera búsquedas frecuentes.",
+      comparison: "Ejemplo: un índice mejora lectura, pero puede volver más lento el insert.",
+      advantage: "Ejemplo: sirve para consultas frecuentes sobre columnas clave.",
+      process: "Ejemplo: eliges la columna más usada en filtros y creas el índice.",
+    },
+  },
+  {
+    terms: ["sql"],
+    examples: {
+      conceptual: "Ejemplo: `SELECT * FROM clientes WHERE ciudad = 'San Salvador'`.",
+      comparison: "Ejemplo: SQL es ideal para consultas estructuradas y relaciones claras.",
+      advantage: "Ejemplo: da control fino sobre filtros, joins y agregaciones.",
+      process: "Ejemplo: defines tablas, consultas y restricciones según el modelo.",
+    },
+  },
+  {
+    terms: ["join"],
+    examples: {
+      conceptual: "Ejemplo: unir `clientes` con `pedidos` para obtener compras por usuario.",
+      comparison: "Ejemplo: el join te permite combinar datos sin duplicar información.",
+      advantage: "Ejemplo: facilita reportes y consultas relacionadas.",
+      process: "Ejemplo: conectas ambas tablas por su llave común.",
+    },
+  },
+  {
+    terms: ["normalizacion"],
+    examples: {
+      conceptual: "Ejemplo: separar clientes y direcciones para evitar datos duplicados.",
+      comparison: "Ejemplo: normalizar mejora consistencia, aunque a veces complica consultas.",
+      advantage: "Ejemplo: reduce redundancia y errores de actualización.",
+      process: "Ejemplo: separas la información en tablas relacionadas.",
+    },
+  },
+  {
+    terms: ["base de datos", "bases de datos", "database", "db", "mysql", "postgres", "postgresql", "oracle", "sql server"],
+    examples: {
+      conceptual: "Ejemplo: elegir una base relacional cuando necesitas consistencia y relaciones claras.",
+      comparison: "Ejemplo: una base relacional conviene para transacciones; una NoSQL para flexibilidad de esquema.",
+      advantage: "Ejemplo: una buena base de datos mejora consistencia, rendimiento y mantenimiento.",
+      process: "Ejemplo: modelas entidades, relaciones, índices y transacciones según el caso.",
+    },
+  },
+  {
+    terms: ["cache", "caché"],
+    examples: {
+      conceptual: "Ejemplo: guardar una respuesta frecuente para no recalcularla siempre.",
+      comparison: "Ejemplo: cachear ayuda cuando lees mucho más de lo que escribes.",
+      advantage: "Ejemplo: reduce latencia y carga del sistema.",
+      process: "Ejemplo: consultas el caché primero y vas a la fuente solo si no hay dato.",
+    },
+  },
+  {
+    terms: ["queue", "cola", "rabbitmq", "kafka"],
+    examples: {
+      conceptual: "Ejemplo: enviar un pedido a una cola para procesarlo de forma asíncrona.",
+      comparison: "Ejemplo: una cola ayuda a desacoplar procesos y absorber picos de carga.",
+      advantage: "Ejemplo: mejora resiliencia y evita bloquear al usuario.",
+      process: "Ejemplo: publicas el evento, otro servicio lo consume y lo procesa.",
+    },
+  },
+  {
+    terms: ["testing", "unitario", "unit test", "prueba unitaria"],
+    examples: {
+      conceptual: "Ejemplo: un test verifica que al guardar un usuario se cree el registro correctamente.",
+      comparison: "Ejemplo: las pruebas unitarias son más rápidas que las de integración.",
+      advantage: "Ejemplo: ayudan a detectar fallos antes de llegar a producción.",
+      process: "Ejemplo: preparas el caso, ejecutas la función y validas el resultado esperado.",
+    },
+  },
+  {
+    terms: ["seguridad", "security", "seguro"],
+    examples: {
+      conceptual: "Ejemplo: validar el token antes de permitir acceso al endpoint.",
+      comparison: "Ejemplo: seguridad por capas es mejor que confiar solo en el frontend.",
+      advantage: "Ejemplo: protege datos y reduce riesgos de acceso indebido.",
+      process: "Ejemplo: autenticas, autorizas y registras el acceso.",
+    },
+  },
+  {
+    terms: ["observabilidad", "logs", "metricas", "tracing"],
+    examples: {
+      conceptual: "Ejemplo: revisar logs y métricas para detectar dónde falla el sistema.",
+      comparison: "Ejemplo: observabilidad da más visibilidad que solo mirar errores sueltos.",
+      advantage: "Ejemplo: ayuda a encontrar problemas más rápido en producción.",
+      process: "Ejemplo: registras logs, mides métricas y sigues trazas cuando hay incidentes.",
+    },
+  },
+  {
+    terms: ["performance"],
+    examples: {
+      conceptual: "Ejemplo: paginar resultados para no traer miles de registros de una vez.",
+      comparison: "Ejemplo: optimizar consultas suele dar más impacto que microajustar código.",
+      advantage: "Ejemplo: mejora respuesta y experiencia del usuario.",
+      process: "Ejemplo: mides el cuello de botella y corriges donde más pesa.",
+    },
+  },
+  {
+    terms: ["escalabilidad"],
+    examples: {
+      conceptual: "Ejemplo: dividir carga entre servicios o instancias cuando crece el tráfico.",
+      comparison: "Ejemplo: escalar horizontalmente funciona mejor cuando el sistema está desacoplado.",
+      advantage: "Ejemplo: permite crecer sin rehacer todo el sistema.",
+      process: "Ejemplo: repartes carga, agregas capacidad y monitoreas el consumo.",
+    },
+  },
+  {
+    terms: ["ia", "inteligencia artificial", "llm", "prompt", "agente", "openai"],
+    examples: {
+      conceptual: "Ejemplo: usar un modelo para resumir, clasificar o responder preguntas.",
+      comparison: "Ejemplo: un LLM sirve mejor para lenguaje natural que un flujo rígido de reglas.",
+      advantage: "Ejemplo: acelera tareas repetitivas y aporta asistencia inteligente.",
+      process: "Ejemplo: das contexto, defines instrucciones y validas la salida del modelo.",
+    },
+  },
+  {
+    terms: ["spring boot"],
+    examples: {
+      conceptual: "Ejemplo: exponer un endpoint `GET /health` para validar que el servicio responde.",
+      comparison: "Ejemplo: Spring Boot acelera arranque frente a configurar todo a mano.",
+      advantage: "Ejemplo: reduce boilerplate y estandariza backend Java.",
+      process: "Ejemplo: creas el controlador, el servicio y el repositorio, y Spring los conecta.",
+    },
+  },
+  {
+    terms: ["java"],
+    examples: {
+      conceptual: "Ejemplo: definir una clase `Usuario` con atributos y métodos simples.",
+      comparison: "Ejemplo: Java conviene cuando buscas robustez y ecosistema empresarial.",
+      advantage: "Ejemplo: te da tipado fuerte, madurez y buena mantenibilidad.",
+      process: "Ejemplo: modelas clases, servicios y repositorios con una separación clara.",
+    },
+  },
+  {
+    terms: ["angular"],
+    examples: {
+      conceptual: "Ejemplo: un componente Angular separa plantilla, lógica y estilos.",
+      comparison: "Ejemplo: Angular conviene en apps grandes con estructura y patrones claros.",
+      advantage: "Ejemplo: te da módulos, DI y una arquitectura muy ordenada.",
+      process: "Ejemplo: creas el componente, el servicio y conectas ambos por inyección de dependencias.",
+    },
+  },
+  {
+    terms: ["react"],
+    examples: {
+      conceptual: "Ejemplo: un componente recibe props y renderiza una tarjeta reutilizable.",
+      comparison: "Ejemplo: React es más flexible cuando quieres armar tu propia estructura.",
+      advantage: "Ejemplo: facilita UI reutilizable y composición.",
+      process: "Ejemplo: creas componentes pequeños, compartes estado y actualizas la vista.",
+    },
+  },
+  {
+    terms: ["hook"],
+    examples: {
+      conceptual: "Ejemplo: `useState` guarda el estado de un formulario.",
+      comparison: "Ejemplo: los hooks simplifican la lógica frente a patrones más viejos.",
+      advantage: "Ejemplo: hacen el código más limpio y reutilizable.",
+      process: "Ejemplo: declaras el estado, reaccionas a cambios y renderizas de nuevo.",
+    },
+  },
+  {
+    terms: ["estado", "state"],
+    examples: {
+      conceptual: "Ejemplo: actualizar el estado para que la interfaz cambie al instante.",
+      comparison: "Ejemplo: manejar bien el estado evita duplicación y errores de UI.",
+      advantage: "Ejemplo: mejora la respuesta visual de la aplicación.",
+      process: "Ejemplo: cambias un valor y la vista se actualiza automáticamente.",
+    },
+  },
+  {
+    terms: ["next js", "nextjs"],
+    examples: {
+      conceptual: "Ejemplo: una página en `Next.js` carga datos del servidor antes de renderizar.",
+      comparison: "Ejemplo: Next.js conviene cuando quieres SSR, routing y buena estructura.",
+      advantage: "Ejemplo: combina frontend y backend ligero en una sola base.",
+      process: "Ejemplo: defines la página, obtienes los datos y renderizas con SSR o ISR.",
+    },
+  },
+  {
+    terms: ["node"],
+    examples: {
+      conceptual: "Ejemplo: crear un pequeño servicio HTTP con Node.js para responder peticiones.",
+      comparison: "Ejemplo: Node.js funciona bien en APIs ligeras y tiempo real.",
+      advantage: "Ejemplo: es rápido para construir servicios y automatizaciones.",
+      process: "Ejemplo: levantas el servidor, expones rutas y conectas la lógica.",
+    },
+  },
+  {
+    terms: ["python"],
+    examples: {
+      conceptual: "Ejemplo: usar Python para automatizar tareas o procesar datos.",
+      comparison: "Ejemplo: Python es muy fuerte en scripting, datos e IA.",
+      advantage: "Ejemplo: acelera prototipos y tareas de análisis.",
+      process: "Ejemplo: defines el script, procesas entradas y devuelves resultados simples.",
+    },
+  },
+  {
+    terms: ["c#"],
+    examples: {
+      conceptual: "Ejemplo: crear una clase `Cliente` con propiedades y métodos claros.",
+      comparison: "Ejemplo: C# es una gran opción si estás en ecosistema Microsoft.",
+      advantage: "Ejemplo: ofrece buen soporte para aplicaciones empresariales y APIs.",
+      process: "Ejemplo: modelas entidades, servicios y controladores con una arquitectura limpia.",
+    },
+  },
+];
+
+function inferInterviewStyle(question: string, answer: string): InterviewStyle {
+  const source = normalizeLookupText(`${question} ${answer}`);
+
+  if (
+    source.includes("diferencia") ||
+    source.includes("compar") ||
+    source.includes(" vs ") ||
+    source.includes("cual conviene") ||
+    source.includes("cuál conviene") ||
+    source.includes("mejor opcion") ||
+    source.includes("mejor opción")
+  ) {
+    return "comparison";
+  }
+
+  if (
+    source.includes("ventaja") ||
+    source.includes("beneficio") ||
+    source.includes("por que usar") ||
+    source.includes("porque usar") ||
+    source.includes("por qué usar") ||
+    source.includes("por que elegir") ||
+    source.includes("porque elegir") ||
+    source.includes("por qué elegir")
+  ) {
+    return "advantage";
+  }
+
+  if (
+    source.includes("como") ||
+    source.includes("paso") ||
+    source.includes("proceso") ||
+    source.includes("implementar") ||
+    source.includes("crear") ||
+    source.includes("construir") ||
+    source.includes("flujo")
+  ) {
+    return "process";
+  }
+
+  return "conceptual";
+}
+
+function buildInterviewExample(question: string, answer: string) {
+  const source = normalizeLookupText(`${question} ${answer}`);
+  const style = inferInterviewStyle(question, answer);
+
+  for (const mapping of TOPIC_EXAMPLES) {
+    if (mapping.terms.some((term) => source.includes(term))) {
+      return toHumanExample(mapping.examples[style]);
+    }
+  }
+
+  const questionTopic = normalizeLookupText(question)
+    .replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, "")
+    .split(" ")
+    .filter((word) => word && !TOPIC_STOP_WORDS.has(word));
+
+  const topic = questionTopic.slice(0, 3).join(" ") || "este concepto";
+
+  if (style === "comparison") {
+    return topic === "este concepto"
+      ? "Yo lo diría así: lo comparo con otra opción y elijo según el caso."
+      : `Yo lo diría así: comparo ${topic} con otra opción y elijo según el caso.`;
+  }
+
+  if (style === "advantage") {
+    return topic === "este concepto"
+      ? "Yo lo diría así: lo uso porque aporta una ventaja clara."
+      : `Yo lo diría así: uso ${topic} porque aporta una ventaja clara.`;
+  }
+
+  if (style === "process") {
+    return topic === "este concepto"
+      ? "Yo lo diría así: lo explico paso a paso en un caso real."
+      : `Yo lo diría así: lo explico paso a paso usando ${topic}.`;
+  }
+
+  return topic === "este concepto"
+    ? "Yo lo diría así: lo uso en un caso real de entrevista."
+    : `Yo lo diría así: uso ${topic} en un caso real.`;
+}
+
 type FloatingPosition = {
   x: number;
   y: number;
@@ -201,6 +666,11 @@ export default function Page() {
       .filter((entry) => entry.speaker === "Usuario")
       .at(-1)?.text || "";
   }, [entries]);
+
+  const latestInterviewExampleText = useMemo(() => {
+    if (!latestAssistantText || !latestUserText) return "";
+    return buildInterviewExample(latestUserText, latestAssistantText);
+  }, [latestAssistantText, latestUserText]);
 
   const recentAssistantEntries = useMemo(
     () => entries.filter((entry) => entry.speaker === "Asistente").slice(-4),
@@ -426,6 +896,30 @@ export default function Page() {
                 ) : (
                   <div className="flex h-full min-h-[180px] items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/15 px-6 text-center text-sm text-white/45">
                     Aquí aparecerá la respuesta del asistente en grande.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-[1.4rem] border border-cyan-500/20 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.16),rgba(9,9,13,0.97))] p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-[10px] uppercase tracking-[0.35em] text-white/35">Cómo lo diría</div>
+                <div className="text-[11px] text-white/45">Solo lectura</div>
+              </div>
+              <div className="mt-4 min-h-[96px]">
+                {latestInterviewExampleText ? (
+                  <p
+                    className="max-w-none font-medium tracking-[-0.03em] text-cyan-50"
+                    style={{
+                      fontSize: isFloatingExpanded ? "clamp(1rem, 2vw, 2rem)" : "clamp(0.95rem, 1.8vw, 1.7rem)",
+                      lineHeight: 1.18,
+                    }}
+                  >
+                    {latestInterviewExampleText}
+                  </p>
+                ) : (
+                  <div className="flex min-h-[96px] items-center rounded-3xl border border-dashed border-white/10 bg-black/15 px-6 text-sm text-white/45">
+                    El ejemplo corto aparecerá aquí y no se escuchará.
                   </div>
                 )}
               </div>
@@ -722,6 +1216,30 @@ export default function Page() {
                         </div>
                       </div>
                     )}
+                  </div>
+
+                  <div className="mt-4 rounded-[1.25rem] border border-cyan-500/20 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.16),rgba(9,9,13,0.97))] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-[10px] uppercase tracking-[0.35em] text-white/35">Cómo lo diría</div>
+                  <div className="text-[11px] text-white/45">Solo lectura</div>
+                </div>
+                    <div className="mt-3 min-h-[120px]">
+                      {latestInterviewExampleText ? (
+                        <p
+                          className="max-w-none whitespace-pre-wrap break-words font-medium tracking-[-0.03em] text-cyan-50"
+                          style={{
+                            fontSize: isFloating ? "clamp(1.05rem, 2.2vw, 2.2rem)" : "clamp(0.95rem, 1.7vw, 1.7rem)",
+                            lineHeight: 1.16,
+                          }}
+                        >
+                          {latestInterviewExampleText}
+                        </p>
+                      ) : (
+                        <div className="flex min-h-[120px] items-center rounded-2xl border border-dashed border-white/10 bg-black/15 px-5 text-sm text-white/45">
+                          El ejemplo corto aparecerá aquí y no se escuchará.
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {recentAssistantEntries.length > 0 ? (
