@@ -1484,13 +1484,13 @@ export default function Page() {
               <div className="text-[10px] uppercase tracking-[0.35em] text-white/35">Lo que dice Evo</div>
               <div className="mt-4 min-h-[180px]">
                 {latestAssistantText ? (
-                  <p
-                    className="max-w-none font-semibold tracking-[-0.05em] text-white"
-                    style={{
-                      fontSize: isFloatingExpanded
-                        ? "clamp(2rem, 4.5vw, 4.8rem)"
-                        : "clamp(1.8rem, 4vw, 4.2rem)",
-                      lineHeight: 1.08,
+                    <p
+                      className="max-w-none font-semibold tracking-[-0.05em] text-white"
+                      style={{
+                        fontSize: isFloatingExpanded
+                        ? "clamp(1.55rem, 3.2vw, 3.4rem)"
+                        : "clamp(1.4rem, 2.8vw, 3rem)",
+                      lineHeight: 1.14,
                     }}
                   >
                     {latestAssistantText}
@@ -1510,13 +1510,13 @@ export default function Page() {
               </div>
               <div className="mt-4 min-h-[96px]">
                 {latestInterviewExampleText ? (
-                  <p
-                    className="max-w-none font-medium tracking-[-0.03em] text-cyan-50"
-                    style={{
-                      fontSize: isFloatingExpanded ? "clamp(1rem, 2vw, 2rem)" : "clamp(0.95rem, 1.8vw, 1.7rem)",
-                      lineHeight: 1.18,
-                    }}
-                  >
+                    <p
+                      className="max-w-none font-medium tracking-[-0.03em] text-cyan-50"
+                      style={{
+                        fontSize: isFloatingExpanded ? "clamp(0.92rem, 1.6vw, 1.45rem)" : "clamp(0.84rem, 1.35vw, 1.15rem)",
+                        lineHeight: 1.22,
+                      }}
+                    >
                     {latestInterviewExampleText}
                   </p>
                 ) : (
@@ -1844,14 +1844,14 @@ export default function Page() {
                   <div className="mt-4 min-h-[360px] md:min-h-[520px]">
                     {latestAssistantText ? (
                       <p
-                        className="max-w-none whitespace-pre-wrap break-words font-semibold tracking-[-0.04em] text-white"
-                        style={{
-                          fontSize: isFloating
-                            ? "clamp(1.9rem, 4vw, 4.2rem)"
-                            : "clamp(1.35rem, 2.4vw, 3.15rem)",
-                          lineHeight: 1.04,
-                        }}
-                      >
+                      className="max-w-none whitespace-pre-wrap break-words font-semibold tracking-[-0.04em] text-white"
+                      style={{
+                        fontSize: isFloating
+                          ? "clamp(1.45rem, 3vw, 3.2rem)"
+                          : "clamp(1.25rem, 2.2vw, 2.4rem)",
+                        lineHeight: 1.12,
+                      }}
+                    >
                         {latestAssistantText}
                         {isCalling ? (
                           <span className="ml-1 inline-block h-[0.95em] w-[0.14em] translate-y-[0.14em] animate-pulse rounded-full bg-fuchsia-300 align-middle" />
@@ -1877,8 +1877,8 @@ export default function Page() {
                         <p
                           className="max-w-none whitespace-pre-wrap break-words font-medium tracking-[-0.03em] text-cyan-50"
                           style={{
-                            fontSize: isFloating ? "clamp(1.05rem, 2.2vw, 2.2rem)" : "clamp(0.95rem, 1.7vw, 1.7rem)",
-                            lineHeight: 1.16,
+                            fontSize: isFloating ? "clamp(0.92rem, 1.6vw, 1.5rem)" : "clamp(0.84rem, 1.35vw, 1.2rem)",
+                            lineHeight: 1.22,
                           }}
                         >
                           {latestInterviewExampleText}
@@ -1969,8 +1969,8 @@ export default function Page() {
                     <p
                       className="max-w-none font-medium tracking-[-0.03em] text-cyan-50"
                       style={{
-                        fontSize: "clamp(0.95rem, 1.8vw, 1.7rem)",
-                        lineHeight: 1.16,
+                        fontSize: "clamp(0.84rem, 1.35vw, 1.15rem)",
+                        lineHeight: 1.22,
                       }}
                     >
                       {latestInterviewExampleText}
