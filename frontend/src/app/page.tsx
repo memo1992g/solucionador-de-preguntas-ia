@@ -9,6 +9,7 @@ import { CallStatus as StatusBadge } from "@/components/CallStatus";
 
 const demoMode = String(process.env.NEXT_PUBLIC_DEMO_MODE || "").toLowerCase() === "true";
 const FLOATING_LAYOUT_KEY = "solucionador-preguntas-ia:floating-layout";
+const EXAMPLE_FLOATING_LAYOUT_KEY = "solucionador-preguntas-ia:example-floating-layout";
 
 const statusLabel: Record<CallStatus, string> = {
   esperando: "Esperando",
@@ -509,6 +510,13 @@ type FloatingLayout = {
   position: FloatingPosition | null;
 };
 
+type PanelLayout = {
+  isFloating: boolean;
+  isFloatingExpanded: boolean;
+  isFloatingMinimized: boolean;
+  position: FloatingPosition | null;
+};
+
 export default function Page() {
   const [status, setStatus] = useState<CallStatus>("esperando");
   const [audioLevel, setAudioLevel] = useState(0.08);
@@ -521,6 +529,10 @@ export default function Page() {
   const [isFloatingExpanded, setIsFloatingExpanded] = useState(false);
   const [isFloatingMinimized, setIsFloatingMinimized] = useState(false);
   const [floatingPosition, setFloatingPosition] = useState<FloatingPosition | null>(null);
+  const [isExampleFloating, setIsExampleFloating] = useState(false);
+  const [isExampleFloatingExpanded, setIsExampleFloatingExpanded] = useState(false);
+  const [isExampleFloatingMinimized, setIsExampleFloatingMinimized] = useState(false);
+  const [exampleFloatingPosition, setExampleFloatingPosition] = useState<FloatingPosition | null>(null);
   const [startPromptOpen, setStartPromptOpen] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [isMicPaused, setIsMicPaused] = useState(false);
@@ -533,7 +545,14 @@ export default function Page() {
     offsetX: number;
     offsetY: number;
   } | null>(null);
+  const exampleShellRef = useRef<HTMLElement | null>(null);
+  const exampleDragStateRef = useRef<{
+    pointerId: number;
+    offsetX: number;
+    offsetY: number;
+  } | null>(null);
   const hasHydratedLayoutRef = useRef(false);
+  const hasHydratedExampleLayoutRef = useRef(false);
 
   useEffect(() => () => callRef.current?.stop(), []);
 
@@ -557,6 +576,25 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(EXAMPLE_FLOATING_LAYOUT_KEY);
+      if (!raw) return;
+
+      const saved = JSON.parse(raw) as Partial<PanelLayout>;
+      setIsExampleFloating(Boolean(saved.isFloating));
+      setIsExampleFloatingExpanded(Boolean(saved.isFloatingExpanded));
+      setIsExampleFloatingMinimized(Boolean(saved.isFloatingMinimized));
+      if (saved.position && typeof saved.position.x === "number" && typeof saved.position.y === "number") {
+        setExampleFloatingPosition(saved.position);
+      }
+    } catch {
+      // Ignore invalid persisted state.
+    } finally {
+      hasHydratedExampleLayoutRef.current = true;
+    }
+  }, []);
+
+  useEffect(() => {
     if (!hasHydratedLayoutRef.current) return;
     const payload: FloatingLayout = {
       isFloating,
@@ -572,6 +610,21 @@ export default function Page() {
   }, [floatingPosition, isFloating, isFloatingExpanded, isFloatingMinimized]);
 
   useEffect(() => {
+    if (!hasHydratedExampleLayoutRef.current) return;
+    const payload: PanelLayout = {
+      isFloating: isExampleFloating,
+      isFloatingExpanded: isExampleFloatingExpanded,
+      isFloatingMinimized: isExampleFloatingMinimized,
+      position: exampleFloatingPosition,
+    };
+    try {
+      window.localStorage.setItem(EXAMPLE_FLOATING_LAYOUT_KEY, JSON.stringify(payload));
+    } catch {
+      // Ignore storage failures.
+    }
+  }, [exampleFloatingPosition, isExampleFloating, isExampleFloatingExpanded, isExampleFloatingMinimized]);
+
+  useEffect(() => {
     if (!isFloating || isFloatingExpanded) return;
     if (floatingPosition) return;
     if (typeof window === "undefined") return;
@@ -585,6 +638,21 @@ export default function Page() {
       y: clamp(window.innerHeight - height - 16, 12, maxY),
     });
   }, [floatingPosition, isFloating, isFloatingExpanded]);
+
+  useEffect(() => {
+    if (!isExampleFloating || isExampleFloatingExpanded) return;
+    if (exampleFloatingPosition) return;
+    if (typeof window === "undefined") return;
+
+    const width = Math.min(window.innerWidth - 24, 420);
+    const height = Math.min(window.innerHeight - 24, 320);
+    const maxX = Math.max(12, window.innerWidth - width - 12);
+    const maxY = Math.max(12, window.innerHeight - height - 12);
+    setExampleFloatingPosition({
+      x: clamp(window.innerWidth - width - 16, 12, maxX),
+      y: clamp(window.innerHeight - height - 16, 12, maxY),
+    });
+  }, [exampleFloatingPosition, isExampleFloating, isExampleFloatingExpanded]);
 
   useEffect(() => {
     if (!isFloating || isFloatingExpanded || !floatingPosition) return;
@@ -607,6 +675,28 @@ export default function Page() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [floatingPosition, isFloating, isFloatingExpanded]);
+
+  useEffect(() => {
+    if (!isExampleFloating || isExampleFloatingExpanded || !exampleFloatingPosition) return;
+
+    const handleResize = () => {
+      setExampleFloatingPosition((current) => {
+        if (!current || !exampleShellRef.current) return current;
+
+        const rect = exampleShellRef.current.getBoundingClientRect();
+        const maxX = Math.max(12, window.innerWidth - rect.width - 12);
+        const maxY = Math.max(12, window.innerHeight - rect.height - 12);
+
+        return {
+          x: clamp(current.x, 12, maxX),
+          y: clamp(current.y, 12, maxY),
+        };
+      });
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [exampleFloatingPosition, isExampleFloating, isExampleFloatingExpanded]);
 
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -674,11 +764,6 @@ export default function Page() {
 
   const recentAssistantEntries = useMemo(
     () => entries.filter((entry) => entry.speaker === "Asistente").slice(-4),
-    [entries]
-  );
-
-  const recentUserEntries = useMemo(
-    () => entries.filter((entry) => entry.speaker === "Usuario").slice(-4),
     [entries]
   );
 
@@ -771,6 +856,20 @@ export default function Page() {
     setIsFloatingMinimized((current) => !current);
   };
 
+  const handleToggleExampleFloating = () => {
+    setIsExampleFloating((current) => !current);
+    setIsExampleFloatingMinimized(false);
+  };
+
+  const handleToggleExampleExpanded = () => {
+    setIsExampleFloatingExpanded((current) => !current);
+    setIsExampleFloatingMinimized(false);
+  };
+
+  const handleToggleExampleMinimized = () => {
+    setIsExampleFloatingMinimized((current) => !current);
+  };
+
   const handleDragStart = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!isFloating || isFloatingExpanded || isFloatingMinimized) return;
     if (event.button !== 0) return;
@@ -810,6 +909,45 @@ export default function Page() {
     }
   };
 
+  const handleExampleDragStart = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!isExampleFloating || isExampleFloatingExpanded || isExampleFloatingMinimized) return;
+    if (event.button !== 0) return;
+    if ((event.target as HTMLElement | null)?.closest("button")) return;
+    if (!exampleShellRef.current) return;
+
+    const rect = exampleShellRef.current.getBoundingClientRect();
+    exampleDragStateRef.current = {
+      pointerId: event.pointerId,
+      offsetX: event.clientX - rect.left,
+      offsetY: event.clientY - rect.top,
+    };
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleExampleDragMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!exampleDragStateRef.current || exampleDragStateRef.current.pointerId !== event.pointerId) return;
+    if (!exampleShellRef.current) return;
+
+    const rect = exampleShellRef.current.getBoundingClientRect();
+    const maxX = Math.max(12, window.innerWidth - rect.width - 12);
+    const maxY = Math.max(12, window.innerHeight - rect.height - 12);
+    const nextX = clamp(event.clientX - exampleDragStateRef.current.offsetX, 12, maxX);
+    const nextY = clamp(event.clientY - exampleDragStateRef.current.offsetY, 12, maxY);
+    setExampleFloatingPosition({ x: nextX, y: nextY });
+  };
+
+  const handleExampleDragEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!exampleDragStateRef.current || exampleDragStateRef.current.pointerId !== event.pointerId) return;
+    exampleDragStateRef.current = null;
+
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // Ignore capture release failures.
+    }
+  };
+
   const teleprompterShellClass = isFloating
     ? isFloatingExpanded
       ? "fixed inset-3 z-30 overflow-hidden rounded-[2rem] border border-white/12 bg-[linear-gradient(180deg,rgba(18,18,28,0.98),rgba(6,6,10,0.98))] shadow-[0_30px_120px_rgba(0,0,0,0.72)] backdrop-blur-2xl transition-all duration-300"
@@ -826,6 +964,25 @@ export default function Page() {
       ? {
           left: `${floatingPosition.x}px`,
           top: `${floatingPosition.y}px`,
+        }
+      : undefined;
+
+  const exampleShellClass = isExampleFloating
+    ? isExampleFloatingExpanded
+      ? "fixed inset-3 z-20 overflow-hidden rounded-[2rem] border border-white/12 bg-[linear-gradient(180deg,rgba(18,18,28,0.98),rgba(6,6,10,0.98))] shadow-[0_30px_120px_rgba(0,0,0,0.72)] backdrop-blur-2xl transition-all duration-300"
+      : isExampleFloatingMinimized
+        ? "fixed z-20 h-auto overflow-hidden rounded-[1.5rem] border border-white/12 bg-[linear-gradient(180deg,rgba(18,18,28,0.96),rgba(6,6,10,0.96))] shadow-[0_24px_90px_rgba(0,0,0,0.65)] backdrop-blur-2xl transition-all duration-300 w-[min(92vw,24rem)]"
+        : "fixed z-20 max-h-[calc(100vh-1.5rem)] overflow-hidden rounded-[2rem] border border-white/12 bg-[linear-gradient(180deg,rgba(18,18,28,0.96),rgba(6,6,10,0.96))] shadow-[0_30px_120px_rgba(0,0,0,0.65)] backdrop-blur-2xl transition-all duration-300 w-[min(92vw,28rem)]"
+    : "rounded-[1.4rem] border border-cyan-500/20 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.16),rgba(9,9,13,0.97))] p-5";
+
+  const exampleBodyClass = isExampleFloating ? (isExampleFloatingExpanded ? "h-full p-4 md:p-5" : "p-4 md:p-5") : "";
+  const showExampleContent = !isExampleFloatingMinimized;
+
+  const exampleShellStyle =
+    isExampleFloating && !isExampleFloatingExpanded && exampleFloatingPosition
+      ? {
+          left: `${exampleFloatingPosition.x}px`,
+          top: `${exampleFloatingPosition.y}px`,
         }
       : undefined;
 
@@ -903,7 +1060,7 @@ export default function Page() {
 
             <div className="rounded-[1.4rem] border border-cyan-500/20 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.16),rgba(9,9,13,0.97))] p-5">
               <div className="flex items-center justify-between gap-3">
-                <div className="text-[10px] uppercase tracking-[0.35em] text-white/35">Cómo lo diría</div>
+                <div className="text-[10px] uppercase tracking-[0.35em] text-white/35">Ejemplo</div>
                 <div className="text-[11px] text-white/45">Solo lectura</div>
               </div>
               <div className="mt-4 min-h-[96px]">
@@ -924,31 +1081,78 @@ export default function Page() {
                 )}
               </div>
             </div>
-
-            <div className="rounded-[1.4rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(34,197,94,0.14),rgba(9,9,13,0.97))] p-5">
-              <div className="text-[10px] uppercase tracking-[0.35em] text-white/35">Lo que dijiste tú</div>
-              <div className="mt-4 min-h-[140px]">
-                {latestUserText ? (
-                  <p
-                    className="max-w-none font-medium tracking-[-0.04em] text-white/95"
-                    style={{
-                      fontSize: isFloatingExpanded
-                        ? "clamp(1.5rem, 3vw, 3.2rem)"
-                        : "clamp(1.35rem, 2.6vw, 2.8rem)",
-                      lineHeight: 1.12,
-                    }}
-                  >
-                    {latestUserText}
-                  </p>
-                ) : (
-                  <div className="flex h-full min-h-[140px] items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/15 px-6 text-center text-sm text-white/45">
-                    Aquí aparecerá lo que digas tú en tiempo real.
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         )}
+      </div>
+    </section>
+  );
+
+  const examplePanel = (
+    <section ref={exampleShellRef} className={exampleShellClass} style={exampleShellStyle}>
+      <div
+        className={exampleBodyClass}
+        onPointerDown={handleExampleDragStart}
+        onPointerMove={handleExampleDragMove}
+        onPointerUp={handleExampleDragEnd}
+        onPointerCancel={handleExampleDragEnd}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.35em] text-white/35">Ejemplo</div>
+            <div className="mt-1 text-sm text-white/70">Solo lectura</div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleToggleExampleFloating}
+              onPointerDown={(event) => event.stopPropagation()}
+              className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-white/75 transition hover:bg-white/10"
+            >
+              {isExampleFloating ? "Fijar" : "Flotante"}
+            </button>
+            {isExampleFloating ? (
+              <button
+                onClick={handleToggleExampleExpanded}
+                onPointerDown={(event) => event.stopPropagation()}
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-white/75 transition hover:bg-white/10"
+              >
+                {isExampleFloatingExpanded ? "Reducir" : "Pantalla completa"}
+              </button>
+            ) : null}
+            {isExampleFloating ? (
+              <button
+                onClick={handleToggleExampleMinimized}
+                onPointerDown={(event) => event.stopPropagation()}
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-white/75 transition hover:bg-white/10"
+              >
+                {isExampleFloatingMinimized ? "Abrir" : "Minimizar"}
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        {isExampleFloatingMinimized ? (
+          <div className="mt-3 rounded-[1.2rem] border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/80">
+            Tarjeta minimizada. Ábreme para ver el ejemplo.
+          </div>
+        ) : showExampleContent ? (
+          <div className="mt-4">
+            {latestInterviewExampleText ? (
+              <p
+                className="max-w-none font-medium tracking-[-0.03em] text-cyan-50"
+                style={{
+                  fontSize: isExampleFloatingExpanded ? "clamp(1.05rem, 2vw, 2rem)" : "clamp(0.95rem, 1.8vw, 1.7rem)",
+                  lineHeight: 1.16,
+                }}
+              >
+                {latestInterviewExampleText}
+              </p>
+            ) : (
+              <div className="flex min-h-[96px] items-center rounded-3xl border border-dashed border-white/10 bg-black/15 px-6 text-sm text-white/45">
+                El ejemplo corto aparecerá aquí y no se escuchará.
+              </div>
+            )}
+          </div>
+        ) : null}
       </div>
     </section>
   );
@@ -1253,48 +1457,6 @@ export default function Page() {
                   ) : null}
                 </div>
 
-                <div className="rounded-[1.4rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(34,197,94,0.14),rgba(9,9,13,0.97))] p-5 md:p-6">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-[10px] uppercase tracking-[0.35em] text-white/35">Lo que dijiste tú</div>
-                    <div className="flex items-center gap-2 text-[11px] text-white/45">
-                      <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(74,222,128,0.55)]" />
-                      Detectado
-                    </div>
-                  </div>
-
-                  <div className="mt-4 min-h-[360px] md:min-h-[520px]">
-                    {latestUserText ? (
-                      <p
-                        className="max-w-none whitespace-pre-wrap break-words font-medium tracking-[-0.03em] text-white/95"
-                        style={{
-                          fontSize: isFloating
-                            ? "clamp(1.4rem, 2.8vw, 3rem)"
-                            : "clamp(1.05rem, 1.9vw, 2.25rem)",
-                          lineHeight: 1.1,
-                        }}
-                      >
-                        {latestUserText}
-                      </p>
-                    ) : (
-                      <div className="flex h-full min-h-[220px] items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/15 px-6 text-center">
-                        <div>
-                          <div className="text-sm text-white/45">Aquí aparecerá lo que digas tú en tiempo real.</div>
-                          <div className="mt-2 text-xs uppercase tracking-[0.3em] text-white/25">Micrófono activo</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {recentUserEntries.length > 0 ? (
-                    <div className="mt-4 space-y-2 border-t border-white/10 pt-4">
-                      {recentUserEntries.map((entry) => (
-                        <div key={entry.id} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                          <p className="text-sm leading-6 text-white/78">{entry.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
               </div>
               ) : null}
 
@@ -1335,7 +1497,47 @@ export default function Page() {
               ) : null}
               </div>
             </section>
-            ) : typeof window !== "undefined" ? createPortal(floatingPanel, document.body) : null}
+            ) : typeof window !== "undefined"
+              ? createPortal(floatingPanel, document.body)
+              : null}
+
+            {isExampleFloating && typeof window !== "undefined" ? createPortal(examplePanel, document.body) : null}
+
+            {!isExampleFloating ? (
+              <section className={exampleShellClass}>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[10px] uppercase tracking-[0.35em] text-white/35">Ejemplo</div>
+                    <div className="mt-1 text-sm text-white/70">Solo lectura</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleToggleExampleFloating}
+                      className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-white/75 transition hover:bg-white/10"
+                    >
+                      Flotante
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  {latestInterviewExampleText ? (
+                    <p
+                      className="max-w-none font-medium tracking-[-0.03em] text-cyan-50"
+                      style={{
+                        fontSize: "clamp(0.95rem, 1.8vw, 1.7rem)",
+                        lineHeight: 1.16,
+                      }}
+                    >
+                      {latestInterviewExampleText}
+                    </p>
+                  ) : (
+                    <div className="flex min-h-[96px] items-center rounded-3xl border border-dashed border-white/10 bg-black/15 px-6 text-sm text-white/45">
+                      El ejemplo corto aparecerá aquí y no se escuchará.
+                    </div>
+                  )}
+                </div>
+              </section>
+            ) : null}
 
             <section className={`rounded-[1.35rem] border border-white/10 bg-white/5 p-4 ${isFloatingExpanded ? "hidden" : ""}`}>
               <div className="mb-2 text-[10px] uppercase tracking-[0.22em] text-white/45">Logs</div>
