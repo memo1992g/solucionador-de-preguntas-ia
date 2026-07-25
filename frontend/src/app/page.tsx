@@ -545,8 +545,10 @@ export default function Page() {
   const [startPromptOpen, setStartPromptOpen] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [isMicPaused, setIsMicPaused] = useState(false);
+  const [isVoiceMuted, setIsVoiceMuted] = useState(false);
   const callRef = useRef<RealtimeCallController | null>(null);
   const isMicPausedRef = useRef(false);
+  const isVoiceMutedRef = useRef(false);
   const transcriptEndRef = useRef<HTMLDivElement | null>(null);
   const floatingShellRef = useRef<HTMLElement | null>(null);
   const dragStateRef = useRef<{
@@ -716,6 +718,10 @@ export default function Page() {
   }, [isMicPaused]);
 
   useEffect(() => {
+    isVoiceMutedRef.current = isVoiceMuted;
+  }, [isVoiceMuted]);
+
+  useEffect(() => {
     if (!isCalling) return;
 
     const isEditableTarget = (target: EventTarget | null) => {
@@ -724,10 +730,17 @@ export default function Page() {
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.code !== "Space" || event.repeat) return;
+      if (event.repeat) return;
       if (isEditableTarget(event.target)) return;
-      event.preventDefault();
-      toggleMicPausedState();
+      if (event.code === "Space") {
+        event.preventDefault();
+        toggleMicPausedState();
+        return;
+      }
+      if (event.code === "KeyB") {
+        event.preventDefault();
+        toggleVoiceMutedState();
+      }
     };
 
     const restoreMic = () => {
@@ -786,6 +799,16 @@ export default function Page() {
     setMicPausedState(!isMicPausedRef.current);
   };
 
+  const setVoiceMutedState = (muted: boolean) => {
+    isVoiceMutedRef.current = muted;
+    setIsVoiceMuted(muted);
+    callRef.current?.setAudioMuted(muted);
+  };
+
+  const toggleVoiceMutedState = () => {
+    setVoiceMutedState(!isVoiceMutedRef.current);
+  };
+
   const startCall = async () => {
     setError(null);
     setEntries([]);
@@ -807,6 +830,7 @@ export default function Page() {
       callRef.current = call;
       setIsCalling(true);
       setMicPausedState(false);
+      setVoiceMutedState(false);
       setStatus("escuchando");
     } catch (err) {
       const message = err instanceof Error ? err.message : "No pude iniciar la llamada IA. Revisa la API Key de OpenAI.";
@@ -844,6 +868,8 @@ export default function Page() {
     setIsCalling(false);
     isMicPausedRef.current = false;
     setIsMicPaused(false);
+    isVoiceMutedRef.current = false;
+    setIsVoiceMuted(false);
     setStatus("esperando");
     setAudioLevel(0.08);
     setAudioQuality("Ruido moderado");
@@ -1207,6 +1233,7 @@ export default function Page() {
                 <div>{formatNowClock()}</div>
                 <div>WebRTC activo</div>
                 {isCalling ? <div>{isMicPaused ? "Micrófono pausado" : "Micrófono activo"}</div> : null}
+                {isCalling ? <div>{isVoiceMuted ? "Voz silenciada" : "Voz activa"}</div> : null}
               </div>
             </div>
 
@@ -1237,25 +1264,60 @@ export default function Page() {
                   </div>
                 </div>
                 <div className="mt-2 text-[11px] text-white/65">
-                  Presioná <span className="rounded-md border border-white/15 bg-black/30 px-1.5 py-0.5 font-semibold text-white">Espacio</span> para alternar entre escuchar y pausar.
+                  Presioná <span className="rounded-md border border-white/15 bg-black/30 px-1.5 py-0.5 font-semibold text-white">Espacio</span> para el micrófono y{" "}
+                  <span className="rounded-md border border-white/15 bg-black/30 px-1.5 py-0.5 font-semibold text-white">B</span> para silenciar la voz.
                 </div>
-                <button
-                  onClick={toggleMicPausedState}
-                  className={`mt-3 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[11px] font-semibold transition active:scale-[0.99] ${
-                    isMicPaused
-                      ? "border-amber-400/30 bg-amber-500/15 text-amber-100 hover:bg-amber-500/20"
-                      : "border-emerald-400/30 bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/20"
-                  }`}
-                >
-                  <span
-                    className={`h-2.5 w-2.5 rounded-full ${
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <button
+                    onClick={toggleMicPausedState}
+                    className={`inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2 text-[11px] font-semibold transition active:scale-[0.99] ${
                       isMicPaused
-                        ? "bg-amber-300 shadow-[0_0_16px_rgba(251,191,36,0.55)]"
-                        : "bg-emerald-300 shadow-[0_0_16px_rgba(74,222,128,0.55)] animate-pulse"
+                        ? "border-amber-400/30 bg-amber-500/15 text-amber-100 hover:bg-amber-500/20"
+                        : "border-emerald-400/30 bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/20"
                     }`}
-                  />
-                  {isMicPaused ? "Reanudar escucha" : "Pausar escucha"}
-                </button>
+                  >
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${
+                        isMicPaused
+                          ? "bg-amber-300 shadow-[0_0_16px_rgba(251,191,36,0.55)]"
+                          : "bg-emerald-300 shadow-[0_0_16px_rgba(74,222,128,0.55)] animate-pulse"
+                      }`}
+                    />
+                    {isMicPaused ? "Reanudar escucha" : "Pausar escucha"}
+                  </button>
+                  <button
+                    onClick={toggleVoiceMutedState}
+                    className={`inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2 text-[11px] font-semibold transition active:scale-[0.99] ${
+                      isVoiceMuted
+                        ? "border-sky-400/30 bg-sky-500/15 text-sky-100 hover:bg-sky-500/20"
+                        : "border-fuchsia-400/30 bg-fuchsia-500/15 text-fuchsia-100 hover:bg-fuchsia-500/20"
+                    }`}
+                  >
+                    <span
+                      className={`inline-flex h-5 w-5 items-center justify-center rounded-full border ${
+                        isVoiceMuted
+                          ? "border-sky-300/30 bg-sky-500/15 text-sky-100"
+                          : "border-fuchsia-300/30 bg-fuchsia-500/15 text-fuchsia-100"
+                      }`}
+                      aria-hidden="true"
+                    >
+                      {isVoiceMuted ? (
+                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 5L6 9H2v6h4l5 4V5z" />
+                          <path d="M16 9l5 6" />
+                          <path d="M21 9l-5 6" />
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 animate-pulse" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 5L6 9H2v6h4l5 4V5z" />
+                          <path d="M16 9a4 4 0 010 6" />
+                          <path d="M18.5 6.5a8 8 0 010 11" />
+                        </svg>
+                      )}
+                    </span>
+                    {isVoiceMuted ? "Activar voz" : "Silenciar voz"}
+                  </button>
+                </div>
               </div>
             ) : null}
 
@@ -1296,14 +1358,39 @@ export default function Page() {
                     : "Toca iniciar, concede permiso al micrófono y habla con el asistente en tiempo real."}
                 </p>
                 {isCalling ? (
-                  <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[11px] text-white/65">
-                    <span
-                      className={`h-2.5 w-2.5 rounded-full ${
-                        isMicPaused ? "bg-amber-300 shadow-[0_0_16px_rgba(251,191,36,0.55)]" : "bg-emerald-300 shadow-[0_0_16px_rgba(74,222,128,0.55)]"
-                      }`}
-                    />
-                    <span>{isMicPaused ? "Espacio: micrófono pausado" : "Espacio: micrófono activo"}</span>
-                  </div>
+                  <>
+                    <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[11px] text-white/65">
+                      <span
+                        className={`h-2.5 w-2.5 rounded-full ${
+                          isMicPaused ? "bg-amber-300 shadow-[0_0_16px_rgba(251,191,36,0.55)]" : "bg-emerald-300 shadow-[0_0_16px_rgba(74,222,128,0.55)]"
+                        }`}
+                      />
+                      <span>{isMicPaused ? "Espacio: micrófono pausado" : "Espacio: micrófono activo"}</span>
+                    </div>
+                    <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[11px] text-white/65">
+                      <span
+                        className={`inline-flex h-4 w-4 items-center justify-center rounded-full ${
+                          isVoiceMuted ? "text-sky-200" : "text-fuchsia-200"
+                        }`}
+                        aria-hidden="true"
+                      >
+                        {isVoiceMuted ? (
+                          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 5L6 9H2v6h4l5 4V5z" />
+                            <path d="M16 9l5 6" />
+                            <path d="M21 9l-5 6" />
+                          </svg>
+                        ) : (
+                          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 5L6 9H2v6h4l5 4V5z" />
+                            <path d="M16 9a4 4 0 010 6" />
+                            <path d="M18.5 6.5a8 8 0 010 11" />
+                          </svg>
+                        )}
+                      </span>
+                      <span>{isVoiceMuted ? "B: voz silenciada" : "B: voz activa"}</span>
+                    </div>
+                  </>
                 ) : null}
                 <div className="mt-3 flex items-center gap-2">
                   <div className="h-2 flex-1 rounded-full bg-white/10">
