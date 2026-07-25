@@ -1,11 +1,5 @@
 import { requestRealtimeSession } from "./api";
-import {
-  buildResponseLanguageInstructions,
-  detectContentLanguage,
-  lockConversationLanguage,
-  type ContentLanguage,
-  normalizeLanguageText,
-} from "./language";
+import { normalizeLanguageText } from "./language";
 
 export type CallStatus = "esperando" | "conectando" | "escuchando" | "respondiendo" | "error";
 
@@ -40,10 +34,6 @@ function normalizeSpeechText(value: string) {
 
 function usefulCharacterCount(value: string) {
   return normalizeLanguageText(value).replace(/[^a-z0-9]/g, "").length;
-}
-
-function detectConversationLanguage(value: string): ContentLanguage {
-  return detectContentLanguage(value);
 }
 
 function isDoubtfulTranscript(value: string) {
@@ -176,7 +166,6 @@ export async function startRealtimeCall(callbacks: RealtimeCallbacks) {
   callbacks.onLog?.("DataChannel oai-events creado.");
   const transcripts = createTranscriptStore(callbacks.onTranscriptChange);
   let responseInProgress = false;
-  let activeLanguage: ContentLanguage | null = null;
 
   const sendEvent = (payload: unknown) => {
     if (dc.readyState === "open") dc.send(JSON.stringify(payload));
@@ -189,13 +178,10 @@ export async function startRealtimeCall(callbacks: RealtimeCallbacks) {
     }
 
     responseInProgress = true;
-    const languageInstructions = activeLanguage ? buildResponseLanguageInstructions(activeLanguage) : undefined;
-    callbacks.onLog?.(`Enviando response.create (${reason})${activeLanguage ? ` en ${activeLanguage}` : ""}.`);
+    callbacks.onLog?.(`Enviando response.create (${reason}).`);
     sendEvent({
       type: "response.create",
-      response: {
-        ...(languageInstructions ? { instructions: languageInstructions } : {}),
-      },
+      response: {},
     });
   };
 
@@ -258,7 +244,6 @@ export async function startRealtimeCall(callbacks: RealtimeCallbacks) {
             callbacks.onStatusChange("escuchando");
             break;
           }
-          activeLanguage = lockConversationLanguage(activeLanguage, detectConversationLanguage(transcript));
           callbacks.onLog?.(`Transcripcion usuario completada: ${transcript}`);
           requestAssistantResponse("transcripcion_usuario");
         }
